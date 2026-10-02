@@ -1,5 +1,5 @@
 {
-  "app": { "name": "Memory Swipe", "brand": "memory swipe" },
+  "app": { "name": "Memory Swipe", "brand": "memory swipe", "tagline": "Room for more" },
 
   "nav": { "discover": "Discover", "library": "Library", "review": "Review" },
 
@@ -18,7 +18,6 @@
     "review": "Review your choices",
     "another": "Another session",
     "back": "Back",
-    "start": "Start",
     "close": "Close",
     "settings": "Settings"
   },
@@ -37,7 +36,6 @@
     "deniedBody": "To revisit your photos, allow access in iOS Settings. Nothing is uploaded; everything stays on your device.",
     "settings": "Open Settings",
     "limited": "Selected photos only",
-    "limitedBody": "You’ve shared a selection of photos. Counts reflect just that selection.",
     "manage": "Manage selected photos"
   },
 
@@ -70,9 +68,10 @@
     "body": "By month, by album, by feeling.",
     "resume": "No pressure to finish. Your place is saved after every decision.",
     "chapters": "{{year}} / Your chapters",
-    "albums": "Albums",
     "memories_one": "{{count}} memory",
     "memories_other": "{{count}} memories",
+    "reviewed_one": "{{count}} reviewed",
+    "reviewed_other": "{{count}} reviewed",
     "unknownMonth": "Unknown date",
     "startScope": "Start · {{scope}}"
   },
@@ -86,11 +85,12 @@
     "revisited_other": "{{count}} moments revisited",
     "pending_one": "{{count}} item waiting for your final review.",
     "pending_other": "{{count}} items waiting for your final review.",
-    "kept": "kept",
+    "kept_one": "kept",
+    "kept_other": "kept",
     "endEyebrow": "A little lighter",
     "nothingPending": "Nothing waiting for review. Nicely done.",
-    "reviewCount_one": "Review {{count}}",
-    "reviewCount_other": "Review {{count}}"
+    "reviewCount_one": "Review {{count}} item",
+    "reviewCount_other": "Review {{count}} items"
   },
 
   "review": {
@@ -103,27 +103,44 @@
     "restore": "Tap an item to restore",
     "keepBadge": "Keep",
     "calloutTitle": "You’re in control.",
-    "warning": "Deleting removes items from Apple Photos and synced iCloud devices. Apple Photos keeps them in Recently Deleted for up to 30 days.",
+    "warning": "Deleting removes items from the Photos app and from your other iCloud devices, even if you found them in an album. Photos keeps deleted items in Recently Deleted for up to 30 days.",
     "confirm": "Delete the selected items?",
-    "confirmBody": "iOS will ask you to confirm. Nothing is recoverable from here after Recently Deleted.",
+    "confirmBody": "iOS will ask you to confirm. Once an item leaves Recently Deleted, it can’t be recovered.",
     "error": "Couldn’t delete these items. Your selection is saved.",
     "partial_one": "{{count}} item is still waiting; the rest were deleted.",
     "partial_other": "{{count}} items are still waiting; the rest were deleted.",
     "deleted_one": "{{count}} item deleted.",
-    "deleted_other": "{{count}} items deleted."
+    "deleted_other": "{{count}} items deleted.",
+    "unavailable_one": "{{count}} item was no longer available and was taken off the list.",
+    "unavailable_other": "{{count}} items were no longer available and were taken off the list."
   },
 
   "empty": {
     "library": "No photos here yet",
     "libraryBody": "When you have photos and videos on this device, they’ll show up here.",
     "scope": "You’ve revisited this chapter",
-    "scopeBody": "Everything here has had its moment. Choose another chapter to keep going."
+    "scopeBody": "Everything here has had its moment. Choose another chapter to keep going.",
+    "all": "Everything has had its moment."
   },
 
   "loading": {
     "photo": "Loading your memory…",
+    "queue": "Checking what’s waiting…",
     "error": "This memory couldn’t load",
-    "errorBody": "It may be in iCloud or no longer available. You can skip it."
+    "errorBody": "It may be in iCloud or no longer available. Try again, or skip it."
+  },
+
+  "a11y": {
+    "photo": "Photo",
+    "video": "Video",
+    "indexOf": "{{index}} of {{total}}",
+    "cardHint": "Swipe right to keep, left to set aside, or use the actions.",
+    "ribbon": "{{kept}} kept, {{removed}} set aside, {{skipped}} skipped",
+    "reviewTile": "{{kind}}, {{date}}, {{index}} of {{total}}",
+    "restoreHint": "Restores this item and takes it off the delete list",
+    "queued_one": "{{count}} item waiting for review",
+    "queued_other": "{{count}} items waiting for review",
+    "undone": "Last decision undone"
   },
 
   "settings": {
@@ -144,11 +161,13 @@
     "motion": "Reduce motion",
     "motionHint": "Calm transitions, no floating prints",
     "short": "Short video length",
-    "shortHint": "Long videos are above this limit",
+    "shortHint": "Longer videos count as long",
     "shortValue": "{{count}}s",
     "access": "Photo access",
     "accessHint": "Manage allowed photos in iOS Settings",
     "manage": "Manage",
+    "privacy": "Privacy policy",
+    "support": "Support",
     "reset": "Reset review progress",
     "resetWarning": "This clears keep/remove decisions, including items waiting for review. It never deletes photos.",
     "free": "Free. No ads. No account needed.",

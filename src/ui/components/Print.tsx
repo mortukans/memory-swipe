@@ -6,8 +6,9 @@ import { T } from './Text';
 
 /**
  * A physical photo print: paper border, soft shadow, slight tilt.
- * `PrintFrame` is the big review card (children = fitted media, caption below).
- * `PrintThumb` is a small cover-cropped print for stacks, chapters and the review grid.
+ * `PrintFrame` is the big review card (children = fitted media; caption flows
+ * BELOW the photo and wraps, so it never overlaps the image at any text size).
+ * `PrintThumb` is a small cover-cropped print for stacks, chapters and the grid.
  */
 export function PrintFrame({
   children,
@@ -32,27 +33,26 @@ export function PrintFrame({
           backgroundColor: t.colors.surface,
           borderRadius: t.radius.print,
           padding: 10,
-          paddingBottom: hasCaption ? 44 : 10,
           shadowColor: '#30412C',
-          shadowOpacity: 0.14,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 12 },
-          elevation: 6,
+          shadowOpacity: 0.125,
+          shadowRadius: 17,
+          shadowOffset: { width: 0, height: 14 },
+          elevation: 4,
           transform: [{ rotate: `${rotation}deg` }],
         },
         style,
       ]}
     >
-      {children}
+      <View style={{ flex: 1 }}>{children}</View>
       {hasCaption ? (
-        <View style={{ position: 'absolute', left: 17, right: 17, bottom: 13, flexDirection: 'row', alignItems: 'baseline', gap: 12 }}>
+        <View style={{ paddingTop: 12, paddingHorizontal: 7, paddingBottom: 3, minHeight: 25, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 12, rowGap: 2 }}>
           {caption ? (
-            <T variant="meta" style={{ fontSize: 13, flexShrink: 1 }} numberOfLines={1}>
+            <T variant="meta" style={{ fontSize: 12, lineHeight: 16 }}>
               {caption}
             </T>
           ) : null}
           {meta ? (
-            <T variant="meta" tone="secondary" numberOfLines={1}>
+            <T variant="meta" tone="secondary">
               {meta}
             </T>
           ) : null}
@@ -92,17 +92,17 @@ export function PrintThumb({
           padding: border,
           borderRadius: radius,
           shadowColor: '#35452B',
-          shadowOpacity: 0.12,
+          shadowOpacity: 0.125,
           shadowRadius: 10,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: 3,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 2,
           transform: [{ rotate: `${rotation}deg` }],
         },
         style,
       ]}
     >
-      <View style={{ flex: 1, borderRadius: Math.max(2, radius - 3), overflow: 'hidden', backgroundColor: t.colors.imageBg }}>
-        {uri ? <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} cachePolicy="memory-disk" /> : null}
+      <View style={{ flex: 1, borderRadius: Math.max(2, radius - 3), overflow: 'hidden', backgroundColor: t.colors.imageBg }} accessibilityIgnoresInvertColors>
+        {uri ? <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} cachePolicy="memory" recyclingKey={uri} /> : null}
         {children}
       </View>
     </View>

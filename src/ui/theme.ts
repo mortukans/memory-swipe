@@ -1,64 +1,67 @@
-import { useColorScheme } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, useColorScheme } from 'react-native';
 import { useSettings } from '../state/settings';
 
 /**
  * "Room for more" design tokens (docs/design-handoff/tokens.json).
  * Warm paper, ink typography, one crisp lime accent, a terracotta mark.
- * Text on lime is always ink — never white.
+ * Text on lime is always ink — never white. Every text/background pair below
+ * was checked against WCAG AA (4.5:1 text, 3:1 non-text).
  */
 export interface Palette {
-  /** Page background (paper). */
   bg: string;
-  /** Primary text (ink). */
   text: string;
-  /** Secondary text. */
   secondary: string;
-  /** Print / card surface. */
   surface: string;
-  /** Lime accent. */
   accent: string;
-  /** Terracotta destructive. Never a decorative primary. */
+  /** Terracotta fill — only for the real destructive step. */
   destructive: string;
+  /** Terracotta as *text* (darker/lighter than the fill so it passes AA). */
+  destructiveText: string;
   line: string;
-  /** Soft filled surfaces: tiles, callouts, round controls. */
   tile: string;
-  /** Tint behind the Remove control / stamp. */
   removeTint: string;
-  /** Neutral background behind a fitted photo. */
+  /** Icon colour on removeTint (3:1 non-text). */
+  removeIcon: string;
   imageBg: string;
   ribbonTrack: string;
   ribbonKeep: string;
   ribbonRemove: string;
+  /** The nav capsule fill (ink in light, paper-white in dark). */
+  capsule: string;
   navInactive: string;
   toggleOff: string;
+  toggleOffBorder: string;
   orbit: string;
-  /** Always-dark ink, for text that sits on lime or on the nav capsule. */
+  /** Always-dark ink, for text on lime. */
   ink: string;
-  scrim: string;
-  overlay: string;
+  /** Solid badge/pill background over photos. */
+  badge: string;
 }
 
 const light: Palette = {
   bg: '#F5F2E9',
   text: '#242A25',
-  secondary: '#697068',
+  secondary: '#5F675E',
   surface: '#FFFEF8',
   accent: '#D8ED91',
   destructive: '#C04E31',
+  destructiveText: '#B04628',
   line: '#DCDED2',
   tile: '#EBECE2',
   removeTint: '#F1DFD5',
+  removeIcon: '#C04E31',
   imageBg: '#E4E9DC',
   ribbonTrack: '#E1E3D7',
   ribbonKeep: '#A4B970',
-  ribbonRemove: '#D58C71',
+  ribbonRemove: '#C0583A',
+  capsule: '#242A25',
   navInactive: '#C4C9BE',
   toggleOff: '#C7CEBC',
+  toggleOffBorder: '#8F978A',
   orbit: '#A5B77C',
   ink: '#242A25',
-  scrim: 'rgba(36,42,37,0.33)',
-  overlay: 'rgba(36,42,37,0.8)',
+  badge: 'rgba(36,42,37,0.86)',
 };
 
 const dark: Palette = {
@@ -68,19 +71,22 @@ const dark: Palette = {
   surface: '#36402F',
   accent: '#D8ED91',
   destructive: '#C04E31',
+  destructiveText: '#E8785A',
   line: '#495142',
   tile: '#343D30',
   removeTint: '#4A3A34',
+  removeIcon: '#E8785A',
   imageBg: '#2C342A',
   ribbonTrack: '#3A4236',
   ribbonKeep: '#A4B970',
   ribbonRemove: '#D58C71',
-  navInactive: '#C4C9BE',
+  capsule: '#F3F1E7',
+  navInactive: '#697068',
   toggleOff: '#4A5244',
+  toggleOffBorder: '#6A7265',
   orbit: '#A5B77C',
   ink: '#242A25',
-  scrim: 'rgba(0,0,0,0.5)',
-  overlay: 'rgba(0,0,0,0.75)',
+  badge: 'rgba(36,42,37,0.86)',
 };
 
 /** Base 4pt scale. `page` is the 20pt page inset. */
@@ -92,9 +98,11 @@ export const radius = { xs: 4, sm: 8, print: 11, callout: 18, tile: 20, button: 
 export const motion = {
   commitMs: 240,
   snapbackMs: 300,
+  snapbackDamping: 0.8,
   driftMs: 7000,
   reduceMs: 120,
   ribbonMs: 180,
+  orbitMs: 450,
   translationThreshold: 85,
   projectedThreshold: 120,
   maxRotationDeg: 12,
@@ -121,9 +129,38 @@ export function useTheme(): Theme {
   return { dark: isDark, colors: isDark ? dark : light, spacing, radius, motion, targets };
 }
 
-/** True when motion should be reduced: the app preference OR the system setting. */
+let systemReduceMotion = false;
+const reduceListeners = new Set<(v: boolean) => void>();
+let reduceSubscribed = false;
+
+function subscribeSystemReduceMotion() {
+  if (reduceSubscribed) return;
+  reduceSubscribed = true;
+  try {
+    void AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      systemReduceMotion = Boolean(v);
+      reduceListeners.forEach((l) => l(systemReduceMotion));
+    });
+    AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => {
+      systemReduceMotion = Boolean(v);
+      reduceListeners.forEach((l) => l(systemReduceMotion));
+    });
+  } catch {
+    /* platform without the API (web) */
+  }
+}
+
+/** True when motion should be reduced: the app preference OR the live system setting. */
 export function useMotion(): { reduce: boolean } {
-  const systemReduce = useReducedMotion();
   const pref = useSettings((s) => s.settings.reduceMotion);
-  return { reduce: Boolean(pref) || Boolean(systemReduce) };
+  const [sys, setSys] = useState(systemReduceMotion);
+  useEffect(() => {
+    subscribeSystemReduceMotion();
+    reduceListeners.add(setSys);
+    setSys(systemReduceMotion);
+    return () => {
+      reduceListeners.delete(setSys);
+    };
+  }, []);
+  return { reduce: Boolean(pref) || sys };
 }

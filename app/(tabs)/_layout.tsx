@@ -32,6 +32,7 @@ export default function TabsLayout() {
           }))}
           activeIndex={props.state.index}
           pendingCount={pending}
+          pendingHint={pending > 0 ? t('a11y.queued', { count: pending }) : undefined}
           onPress={(route, focused) => {
             const e = props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
             if (!focused && !e.defaultPrevented) props.navigation.navigate(route.name);

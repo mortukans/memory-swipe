@@ -7,7 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { applyLanguage, initI18n } from '../src/i18n';
 import { useLibrary } from '../src/state/library';
 import { useSettings } from '../src/state/settings';
-import { useTheme } from '../src/ui/theme';
+import { useMotion, useTheme } from '../src/ui/theme';
 
 // Initialise i18n immediately so the very first render has translations.
 initI18n('system');
@@ -17,6 +17,7 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
   const settingsReady = useSettings((s) => s.ready);
   const language = useSettings((s) => s.settings.language);
   const checkAccess = useLibrary((s) => s.checkAccess);
+  const watch = useLibrary((s) => s.watch);
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,9 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
       setBooted(true);
     })();
   }, [loadSettings, checkAccess]);
+
+  // Re-index when the Photos library changes (limited-selection edits, external deletes).
+  useEffect(() => watch(), [watch]);
 
   useEffect(() => {
     applyLanguage(language);
@@ -38,6 +42,7 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const t = useTheme();
+  const { reduce } = useMotion();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -47,13 +52,15 @@ export default function RootLayout() {
             screenOptions={{
               headerShown: false,
               contentStyle: { backgroundColor: t.colors.bg },
-              animation: 'slide_from_right',
+              animation: reduce ? 'fade' : 'slide_from_right',
+              animationDuration: reduce ? 150 : undefined,
             }}
           >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
-            <Stack.Screen name="swipe" />
-            <Stack.Screen name="session-end" options={{ animation: 'fade' }} />
+            {/* Discover → Swipe: the print "arrives" — a soft fade-up (420ms) instead of a stock slide. */}
+            <Stack.Screen name="swipe" options={{ animation: reduce ? 'fade' : 'fade_from_bottom', animationDuration: reduce ? 150 : 420 }} />
+            <Stack.Screen name="session-end" options={{ animation: 'fade', animationDuration: reduce ? 150 : 450 }} />
             <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
           </Stack>
         </Bootstrap>

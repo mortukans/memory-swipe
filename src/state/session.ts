@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { create } from 'zustand';
 import {
   SESSION_SIZE,
@@ -16,15 +15,20 @@ import { media, storage } from './instances';
 import { useLibrary } from './library';
 import { useSettings } from './settings';
 
-/**
- * The active swipe session. Holds the pure ReviewState plus the currently
- * resolved preview, and mirrors every keep/remove to durable storage the moment
- * it happens so progress survives a restart. Skips are session-only and never
- * persisted. Nothing here deletes anything — see src/state/queue.ts.
- */
 /** Optional media filter layered on a scope (Library chips: photos / videos / short / long). */
 export type MediaFilter = 'photo' | 'video' | 'short' | 'long';
 
+/**
+ * The active swipe session. Holds the pure ReviewState plus the currently
+ * resolved preview. Every keep/remove is PERSISTED BEFORE the session advances
+ * (so a crash can never lose a decision the user saw commit). Skips are
+ * session-only and never persisted. Nothing here deletes anything — see
+ * src/state/queue.ts.
+ *
+ * Race safety: `startSeq` makes an overlapping start() a no-op for the older
+ * call; `previewSeq` is bumped on every preview change so a slow resolve can
+ * never land on a card the user has already moved past.
+ */
 interface SessionState {
   collection: CollectionRef | null;
   filter: MediaFilter | null;
@@ -37,9 +41,12 @@ interface SessionState {
   previewLoading: boolean;
   previewError: boolean;
   starting: boolean;
+  /** Increments on every start(); screens use it to ignore stale completion. */
+  generation: number;
 
   start: (collection: CollectionRef, filter?: MediaFilter | null) => Promise<void>;
   loadCurrentPreview: () => Promise<void>;
+  retryPreview: () => Promise<void>;
   keep: () => Promise<void>;
   remove: () => Promise<void>;
   skip: () => void;
@@ -48,9 +55,18 @@ interface SessionState {
 }
 
 let previewSeq = 0;
+let startSeq = 0;
 
-/** Resolved previews cached for the current session, so a prefetched card is instant. */
+/** Resolved previews cached for the current session. */
 const previewCache = new Map<string, MediaPreview>();
+
+/** Storage writes are serialised so an undo can never overtake the decision it undoes. */
+let writeChain: Promise<void> = Promise.resolve();
+function enqueueWrite(fn: () => Promise<void>): Promise<void> {
+  const next = writeChain.then(fn, fn);
+  writeChain = next.catch(() => undefined);
+  return next;
+}
 
 const fallbackItem = (id: string): MediaItem => ({
   id,
@@ -69,19 +85,6 @@ async function resolveAndCache(item: MediaItem): Promise<MediaPreview> {
   const preview = await media.resolvePreview(item);
   previewCache.set(item.id, preview);
   return preview;
-}
-
-/** Warm the next couple of cards so forward swipes don't wait on a round-trip. */
-function prefetchAhead(order: string[], index: number, items: Record<string, MediaItem>): void {
-  for (let k = 1; k <= 2; k++) {
-    const id = order[index + k];
-    if (!id || previewCache.has(id) || !items[id]) continue;
-    void resolveAndCache(items[id])
-      .then((p) => {
-        if (p.kind === 'photo') void Image.prefetch(p.uri).catch(() => {});
-      })
-      .catch(() => {});
-  }
 }
 
 /** Apply an optional media filter to a scoped list. */
@@ -147,13 +150,17 @@ export const useSession = create<SessionState>((set, get) => ({
   previewLoading: false,
   previewError: false,
   starting: false,
+  generation: 0,
 
   start: async (collection, filter = null) => {
+    const gen = ++startSeq;
+    ++previewSeq; // any in-flight preview from a previous session is now stale
     previewCache.clear();
-    set({ starting: true, collection, filter, state: null, preview: null, previewError: false });
+    set({ starting: true, generation: gen, collection, filter, state: null, items: {}, eligible: 0, preview: null, previewError: false, previewLoading: false });
     const { settings } = useSettings.getState();
     const { reviewedIds } = useLibrary.getState();
     const candidates = await candidatesFor(collection, filter);
+    if (gen !== startSeq) return; // a newer session started meanwhile
     const eligibleOrder = buildSessionOrder(candidates, {
       includeFavorites: settings.includeFavorites,
       reviewedIds,
@@ -169,34 +176,33 @@ export const useSession = create<SessionState>((set, get) => ({
   },
 
   loadCurrentPreview: async () => {
+    const seq = ++previewSeq; // every entry invalidates older resolves
     const st = get().state;
     const id = st ? currentId(st) : undefined;
     if (!st || !id) {
       set({ preview: null, previewLoading: false, previewError: false });
       return;
     }
-    const items = get().items;
-    const item = items[id] ?? fallbackItem(id);
-
-    // Cache hit (prefetched): show instantly, no spinner.
+    const item = get().items[id] ?? fallbackItem(id);
     const cached = previewCache.get(id);
     if (cached) {
       set({ preview: cached, previewLoading: false, previewError: false });
-      prefetchAhead(st.order, st.index, items);
       return;
     }
-
-    const seq = ++previewSeq;
     set({ previewLoading: true, previewError: false, preview: null });
     try {
       const preview = await resolveAndCache(item);
-      if (seq === previewSeq) {
-        set({ preview, previewLoading: false });
-        prefetchAhead(st.order, st.index, items);
-      }
+      if (seq === previewSeq) set({ preview, previewLoading: false });
     } catch {
       if (seq === previewSeq) set({ previewError: true, previewLoading: false, preview: null });
     }
+  },
+
+  retryPreview: async () => {
+    const st = get().state;
+    const id = st ? currentId(st) : undefined;
+    if (id) previewCache.delete(id);
+    await get().loadCurrentPreview();
   },
 
   keep: () => applyDecision(get, set, 'keep'),
@@ -216,14 +222,18 @@ export const useSession = create<SessionState>((set, get) => ({
     if (!last) return;
     set({ state: undoCard(st) });
     if (last.type !== 'skip') {
-      await storage.deleteReviews([last.id]);
+      await enqueueWrite(() => storage.deleteReviews([last.id]));
       useLibrary.getState().removeReviewed([last.id]);
     }
     await get().loadCurrentPreview();
   },
 
-  reset: () =>
-    set({ collection: null, filter: null, eligible: 0, state: null, items: {}, preview: null, previewError: false, previewLoading: false }),
+  reset: () => {
+    ++startSeq;
+    ++previewSeq;
+    previewCache.clear();
+    set({ collection: null, filter: null, eligible: 0, state: null, items: {}, preview: null, previewError: false, previewLoading: false, starting: false });
+  },
 }));
 
 async function applyDecision(
@@ -231,13 +241,16 @@ async function applyDecision(
   set: (patch: Partial<SessionState>) => void,
   decision: Decision,
 ): Promise<void> {
+  const gen = startSeq;
   const st = get().state;
   if (!st) return;
   const id = currentId(st);
   if (!id) return;
   const item = get().items[id];
+  // Persist first; advance only once the decision is durable.
+  await enqueueWrite(() => storage.putReview({ id, decision, decidedAt: Date.now(), modMarker: item?.modificationTime ?? null }));
+  if (gen !== startSeq || get().state !== st) return; // session changed under us
   set({ state: decide(st, decision) });
-  await storage.putReview({ id, decision, decidedAt: Date.now(), modMarker: item?.modificationTime ?? null });
   useLibrary.getState().addReviewed([id]);
   await get().loadCurrentPreview();
 }

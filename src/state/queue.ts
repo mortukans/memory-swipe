@@ -2,27 +2,36 @@ import { create } from 'zustand';
 import type { MediaPreview } from '../media/types';
 import { ensureStorageReady, media, storage } from './instances';
 import { useLibrary } from './library';
+import { useSession } from './session';
 
 /**
  * The deletion review queue: everything the user has marked for deletion, read
  * from durable storage (so it spans sessions and survives restarts). This is the
- * only place that actually deletes, and it follows the plan's safety rules:
+ * only place that actually deletes, and it follows the handoff's rules:
  *   1. revalidate every queued id still exists right before deleting,
  *   2. hand the survivors to the system delete (iOS shows its own confirmation),
- *   3. reconcile what truly went by re-checking existence,
- *   4. keep anything cancelled / failed / already-gone-handling honest so the
- *      result screen never reports a false success.
+ *   3. ALWAYS reconcile what truly went by re-checking existence afterwards —
+ *      on success as well as on rejection — and only clear confirmed ids,
+ *   4. report honestly: deleted / still waiting / no longer available; never
+ *      count an item that vanished outside the app as "deleted" by us.
  */
 export interface DeleteResult {
   requested: number;
+  /** Confirmed removed by the system call. */
   deleted: number;
+  /** Still queued (user cancelled or the system left them). */
   remaining: number;
-  /** The user cancelled or some deletions failed, leaving items still queued. */
+  /** Were no longer in the library before we asked (deleted elsewhere / deselected). Cleared from the queue, not counted as deleted. */
+  unavailable: number;
+  /** The user cancelled the system dialog (nothing in `present` was removed). */
   cancelled: boolean;
+  /** The system call threw something other than a cancel and nothing changed. */
+  failed: boolean;
 }
 
 interface QueueState {
   ids: string[];
+  /** Only populated on the web mock (where ids are not renderable URIs). */
   previews: Record<string, MediaPreview | undefined>;
   loading: boolean;
   deleting: boolean;
@@ -43,31 +52,31 @@ export const useQueue = create<QueueState>((set, get) => ({
 
   load: async () => {
     set({ loading: true });
-    await ensureStorageReady();
-    const reviews = await storage.getReviews();
-    const ids = reviews.filter((r) => r.decision === 'remove').map((r) => r.id);
-    set({ ids, loading: false });
-    // Resolve thumbnails in the background; failures just leave a placeholder.
-    const previews: Record<string, MediaPreview | undefined> = {};
-    await Promise.all(
-      ids.map(async (id) => {
-        try {
-          previews[id] = await media.resolvePreview({
-            id,
-            kind: 'photo',
-            creationTime: null,
-            modificationTime: null,
-            durationSec: null,
-            width: 0,
-            height: 0,
-            isFavorite: false,
-          });
-        } catch {
-          previews[id] = undefined;
-        }
-      }),
-    );
-    set({ previews });
+    try {
+      await ensureStorageReady();
+      const reviews = await storage.getReviews();
+      const ids = reviews.filter((r) => r.decision === 'remove').map((r) => r.id);
+      set({ ids, loading: false });
+      if (media.isMock) {
+        // Web dev only: ids are not URIs there, so resolve display URLs.
+        const previews: Record<string, MediaPreview | undefined> = {};
+        await Promise.all(
+          ids.map(async (id) => {
+            try {
+              const item = useLibrary.getState().items.find((i) => i.id === id);
+              previews[id] = await media.resolvePreview(
+                item ?? { id, kind: 'photo', creationTime: null, modificationTime: null, durationSec: null, width: 0, height: 0, isFavorite: false },
+              );
+            } catch {
+              previews[id] = undefined;
+            }
+          }),
+        );
+        set({ previews });
+      }
+    } catch {
+      set({ loading: false });
+    }
   },
 
   pull: async (id) => {
@@ -83,44 +92,47 @@ export const useQueue = create<QueueState>((set, get) => ({
   },
 
   confirmDelete: async () => {
-    set({ deleting: true });
     const ids = get().ids;
+    set({ deleting: true });
+    let result: DeleteResult = { requested: ids.length, deleted: 0, remaining: ids.length, unavailable: 0, cancelled: false, failed: false };
+    try {
+      // 1. Revalidate existence just before deleting.
+      const live = await media.existing(ids);
+      const present = ids.filter((id) => live.has(id));
+      const unavailable = ids.filter((id) => !live.has(id));
 
-    // 1. Revalidate existence just before deleting.
-    const live = await media.existing(ids);
-    const present = ids.filter((id) => live.has(id));
-    const missing = ids.filter((id) => !live.has(id)); // already gone outside the app
+      const deleted = new Set<string>();
+      let cancelled = false;
+      let failed = false;
 
-    const deleted = new Set<string>(missing);
-    let cancelled = false;
-
-    // 2 + 3. Delete the survivors; iOS confirms. Reconcile on any rejection.
-    if (present.length > 0) {
-      try {
-        await media.deleteAssets(present);
-        for (const id of present) deleted.add(id);
-      } catch {
+      // 2 + 3. Delete the survivors (iOS confirms), then reconcile — always.
+      if (present.length > 0) {
+        try {
+          await media.deleteAssets(present);
+        } catch {
+          cancelled = true; // user cancelled or the call failed; reconciliation below tells the truth
+        }
         const stillThere = await media.existing(present);
         for (const id of present) if (!stillThere.has(id)) deleted.add(id);
-        cancelled = present.some((id) => stillThere.has(id));
+        if (cancelled && deleted.size > 0) cancelled = false; // partial success is not a cancel
+        if (!cancelled && deleted.size === 0 && present.length > 0) failed = true;
       }
+
+      // 4. Durable cleanup: drop what truly went and what no longer exists; keep the rest queued.
+      const clear = [...deleted, ...unavailable];
+      await storage.deleteReviews(clear);
+      useLibrary.getState().forget(clear);
+      const remaining = ids.filter((id) => !deleted.has(id) && live.has(id));
+
+      result = { requested: ids.length, deleted: deleted.size, remaining: remaining.length, unavailable: unavailable.length, cancelled, failed };
+      set({ ids: remaining });
+      // An active swipe session may still reference these ids.
+      useSession.getState().reset();
+    } catch {
+      result = { ...result, failed: true };
+    } finally {
+      set({ deleting: false, lastResult: result });
     }
-
-    // 4. Durable cleanup: drop what truly went; keep the rest queued.
-    const deletedIds = [...deleted];
-    await storage.deleteReviews(deletedIds);
-    useLibrary.getState().forget(deletedIds);
-    const remaining = ids.filter((id) => !deleted.has(id));
-
-    const result: DeleteResult = {
-      requested: ids.length,
-      deleted: deletedIds.length,
-      remaining: remaining.length,
-      cancelled,
-    };
-    const previews = { ...get().previews };
-    for (const id of deletedIds) delete previews[id];
-    set({ ids: remaining, previews, deleting: false, lastResult: result });
     return result;
   },
 }));

@@ -5,17 +5,19 @@ import { Pressable, View } from 'react-native';
 import { useTheme } from '../theme';
 import { T } from './Text';
 
-/** Back arrow on the left, a centred eyebrow, an optional control on the right. */
+/** Back (or Close for modals) on the left, a centred eyebrow, an optional control on the right. */
 export function TopBar({
   eyebrow,
   onBack,
   right,
   backLabel,
+  icon = 'arrow-back',
 }: {
   eyebrow?: string;
   onBack?: () => void;
   right?: ReactNode;
   backLabel: string;
+  icon?: 'arrow-back' | 'close';
 }) {
   const t = useTheme();
   return (
@@ -27,7 +29,7 @@ export function TopBar({
         accessibilityLabel={backLabel}
         style={{ width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center' }}
       >
-        <Ionicons name="arrow-back" size={24} color={t.colors.text} />
+        <Ionicons name={icon} size={24} color={t.colors.text} />
       </Pressable>
       {eyebrow ? (
         <T variant="eyebrow" tone="secondary" numberOfLines={1} style={{ flex: 1, textAlign: 'center' }}>

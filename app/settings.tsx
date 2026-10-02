@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 import type { LanguageSetting, ThemeSetting } from '../src/storage';
 import { storage } from '../src/state/instances';
 import { useLibrary } from '../src/state/library';
 import { useQueue } from '../src/state/queue';
+import { useSession } from '../src/state/session';
 import { useSettings } from '../src/state/settings';
 import { Callout } from '../src/ui/components/Callout';
 import { Chip } from '../src/ui/components/Chip';
@@ -12,10 +14,15 @@ import { SettingsRow } from '../src/ui/components/SettingsRow';
 import { T } from '../src/ui/components/Text';
 import { Toggle } from '../src/ui/components/Toggle';
 import { TopBar } from '../src/ui/components/TopBar';
+import { useTheme } from '../src/ui/theme';
+
+export const PRIVACY_URL = 'https://mortukans.github.io/memory-swipe/privacy';
+export const SUPPORT_URL = 'https://mortukans.github.io/memory-swipe/support';
 
 /** Settings: small details, your way. Reset clears decisions only, with confirmation. */
 export default function SettingsScreen() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const settings = useSettings((s) => s.settings);
   const update = useSettings((s) => s.update);
   const refresh = useLibrary((s) => s.refresh);
@@ -32,7 +39,8 @@ export default function SettingsScreen() {
         onPress: () => {
           void (async () => {
             await storage.clearReviews();
-            await refresh();
+            useSession.getState().reset();
+            await refresh(true);
             await loadQueue();
           })();
         },
@@ -40,36 +48,44 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const chips = <V extends string | number>(value: V, opts: { value: V; label: string }[], onChange: (v: V) => void) => (
-    <View style={{ flexDirection: 'row', gap: 6 }}>
+  const chips = <V extends string | number>(value: V, opts: { value: V; label: string; a11y?: string }[], onChange: (v: V) => void) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
       {opts.map((o) => (
-        <Chip key={String(o.value)} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} />
+        <Chip key={String(o.value)} label={o.label} accessibilityLabel={o.a11y} selected={o.value === value} onPress={() => onChange(o.value)} />
       ))}
     </View>
   );
 
+  const link = (url: string) => (
+    <Ionicons name="arrow-forward" size={18} color={theme.colors.secondary} style={{ transform: [{ rotate: '-45deg' }] }} accessibilityElementsHidden />
+  );
+
   return (
     <Screen>
-      <TopBar eyebrow={t('settings.eyebrow')} backLabel={t('action.close')} />
+      <TopBar eyebrow={t('settings.eyebrow')} backLabel={t('action.close')} icon="close" />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        <T variant="title">{t('settings.title')}</T>
+        <T variant="title" accessibilityRole="header">
+          {t('settings.title')}
+        </T>
 
         <View style={{ marginTop: 12 }}>
           <SettingsRow
             title={t('settings.language')}
             hint={t('settings.languageHint')}
+            layout="stacked"
             right={chips<LanguageSetting>(
               settings.language,
               [
                 { value: 'system', label: t('settings.system') },
-                { value: 'en', label: 'EN' },
-                { value: 'lv', label: 'LV' },
+                { value: 'en', label: 'EN', a11y: t('settings.english') },
+                { value: 'lv', label: 'LV', a11y: t('settings.latvian') },
               ],
               (language) => void update({ language }),
             )}
           />
           <SettingsRow
             title={t('settings.theme')}
+            layout="stacked"
             right={chips<ThemeSetting>(
               settings.theme,
               [
@@ -77,7 +93,7 @@ export default function SettingsScreen() {
                 { value: 'light', label: t('settings.light') },
                 { value: 'dark', label: t('settings.dark') },
               ],
-              (theme) => void update({ theme }),
+              (th) => void update({ theme: th }),
             )}
           />
           <SettingsRow
@@ -98,6 +114,7 @@ export default function SettingsScreen() {
           <SettingsRow
             title={t('settings.short')}
             hint={t('settings.shortHint')}
+            layout="stacked"
             right={chips<number>(
               settings.shortVideoMaxSec,
               [15, 30, 60].map((n) => ({ value: n, label: t('settings.shortValue', { count: n }) })),
@@ -109,6 +126,8 @@ export default function SettingsScreen() {
             hint={access === 'limited' ? t('permission.limited') : t('settings.accessHint')}
             right={<Chip label={t('settings.manage')} onPress={() => (access === 'limited' ? void presentLimitedPicker() : void Linking.openSettings())} />}
           />
+          <SettingsRow title={t('settings.privacy')} right={link(PRIVACY_URL)} onPress={() => void Linking.openURL(PRIVACY_URL)} />
+          <SettingsRow title={t('settings.support')} right={link(SUPPORT_URL)} onPress={() => void Linking.openURL(SUPPORT_URL)} />
           <SettingsRow title={t('settings.reset')} destructive onPress={resetProgress} />
         </View>
 
@@ -116,7 +135,7 @@ export default function SettingsScreen() {
           <Callout title={t('settings.free')}>{t('settings.freeBody')}</Callout>
         </View>
         <T variant="meta" tone="secondary" style={{ textAlign: 'center', marginTop: 20, fontSize: 11 }}>
-          {t('app.name')} · Room for more
+          {t('app.name')} · {t('app.tagline')}
         </T>
       </ScrollView>
     </Screen>

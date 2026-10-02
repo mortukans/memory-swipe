@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { applyFavoriteProtection, groupByMonth, type CollectionKind, type MonthBucket } from '../../src/collections';
 import type { AlbumRef, MediaItem } from '../../src/media';
 import { media } from '../../src/state/instances';
@@ -63,7 +64,7 @@ export default function Library() {
     () => months.map((b) => b.items.find((i) => i.kind === 'photo')).filter((i): i is MediaItem => Boolean(i)),
     [months],
   );
-  const thumbs = useThumbs(coverItems, 36);
+  const thumbs = useThumbs(coverItems, coverItems.length);
   const unreviewedCount = useMemo(() => scoped.filter((i) => !reviewedIds.has(i.id)).length, [scoped, reviewedIds]);
 
   const chips: [Filter, string][] = [
@@ -96,10 +97,24 @@ export default function Library() {
   return (
     <Screen padded={false}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: theme.spacing.page, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        <T variant="eyebrow" tone="secondary" style={{ textAlign: 'center', paddingVertical: 18 }}>
-          {t('library.eyebrow')}
+        <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 8 }}>
+          <View style={{ width: 44 }} />
+          <T variant="eyebrow" tone="secondary" style={{ flex: 1, textAlign: 'center' }}>
+            {t('library.eyebrow')}
+          </T>
+          <Pressable
+            onPress={() => router.push('/settings')}
+            accessibilityRole="button"
+            accessibilityLabel={t('action.settings')}
+            hitSlop={10}
+            style={{ width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' }}
+          >
+            <Ionicons name="menu" size={24} color={theme.colors.text} />
+          </Pressable>
+        </View>
+        <T variant="title" accessibilityRole="header">
+          {t('library.title')}
         </T>
-        <T variant="title">{t('library.title')}</T>
         <T variant="body" tone="secondary" style={{ marginTop: 10 }}>
           {t('library.body')}
         </T>
@@ -114,13 +129,15 @@ export default function Library() {
           <>
             <PrimaryButton label={t('library.startScope', { scope: scopeLabel })} onPress={goScope} disabled={unreviewedCount === 0} />
             <T variant="meta" tone="secondary" style={{ textAlign: 'center', fontSize: 11, marginTop: 10, marginBottom: 6 }}>
-              {unreviewedCount === 0 ? t('empty.scope') : t('library.memories', { count: unreviewedCount })}
+              {unreviewedCount === 0 ? t('empty.all') : t('library.memories', { count: unreviewedCount })}
             </T>
             {byYear.map(([year, buckets]) => (
               <View key={year || 'unknown'} style={{ marginTop: 16 }}>
-                <T variant="eyebrow" tone="secondary" style={{ marginBottom: 4 }}>
-                  {year ? t('library.chapters', { year }) : t('library.unknownMonth')}
-                </T>
+                {year ? (
+                  <T variant="eyebrow" tone="secondary" style={{ marginBottom: 4 }}>
+                    {t('library.chapters', { year })}
+                  </T>
+                ) : null}
                 {buckets.map((b) => {
                   const cover = b.items.find((i) => i.kind === 'photo');
                   const reviewed = b.items.filter((i) => reviewedIds.has(i.id)).length;
@@ -128,7 +145,7 @@ export default function Library() {
                     <MonthRow
                       key={b.key}
                       title={b.year == null ? t('library.unknownMonth') : monthName(i18n.language, b.month!)}
-                      sub={t('library.memories', { count: b.items.length })}
+                      sub={`${t('library.memories', { count: b.items.length })} · ${t('library.reviewed', { count: reviewed })}`}
                       uri={cover ? thumbs[cover.id] : null}
                       fraction={b.items.length ? reviewed / b.items.length : 0}
                       onPress={() => goMonth(b)}

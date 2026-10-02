@@ -1,23 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { useVideoPlayer, VideoView, type StatusChangeEventPayload } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import type { MediaPreview } from '../../media/types';
 import { useTheme } from '../theme';
+import { PrimaryButton } from './PrimaryButton';
 import { T } from './Text';
 
 export interface FittedMediaLabels {
   loading: string;
   errorTitle: string;
   errorBody: string;
+  retry: string;
 }
 
 /**
  * The photo or video being decided on, always aspect-fit (never cropped) on a
- * neutral background. Videos load from the ph:// id via replaceAsync (the only
- * path that works for iOS Photos), start muted with native controls, and pause
- * whenever the card is not the active one. Audio never autoplays.
+ * neutral background. Both load from the ph:// id: expo-image fetches a
+ * viewport-sized rendition; expo-video loads via replaceAsync (the only path
+ * that works for iOS Photos). Videos start muted with native controls and pause
+ * whenever the card is not active. Audio never autoplays. Load failures offer
+ * Retry (the user can always Skip).
  */
 export function FittedMedia({
   preview,
@@ -25,6 +29,7 @@ export function FittedMedia({
   error,
   active,
   labels,
+  onRetry,
   radius = 4,
 }: {
   preview: MediaPreview | null;
@@ -32,6 +37,7 @@ export function FittedMedia({
   error: boolean;
   active: boolean;
   labels: FittedMediaLabels;
+  onRetry?: () => void;
   radius?: number;
 }) {
   const t = useTheme();
@@ -39,10 +45,12 @@ export function FittedMedia({
   const videoSource = isVideo ? preview?.uri ?? null : null;
 
   const [imgLoading, setImgLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
   const [vLoading, setVLoading] = useState(true);
 
   useEffect(() => {
     setImgLoading(true);
+    setImgError(false);
     setVLoading(true);
   }, [preview?.id]);
 
@@ -53,9 +61,8 @@ export function FittedMedia({
 
   useEffect(() => {
     if (!player) return;
-    const sub = player.addListener('statusChange', (payload: { status?: string }) => {
-      const status = payload?.status ?? '?';
-      setVLoading(status === 'loading' || status === 'idle');
+    const sub = player.addListener('statusChange', (payload: StatusChangeEventPayload) => {
+      setVLoading(payload.status === 'loading' || payload.status === 'idle');
     });
     return () => sub.remove();
   }, [player]);
@@ -76,8 +83,7 @@ export function FittedMedia({
     };
   }, [player, videoSource, active]);
 
-  // Pause whenever inactive; only resume once the source is actually ready
-  // (replaceAsync starts playback itself when the load completes).
+  // Pause whenever inactive; only resume once the source is actually ready.
   useEffect(() => {
     if (!player) return;
     try {
@@ -91,11 +97,12 @@ export function FittedMedia({
     }
   }, [player, active, isVideo]);
 
-  const showSpinner = loading || (preview ? (isVideo ? vLoading : imgLoading) : true);
+  const failed = error || imgError;
+  const showSpinner = !failed && (loading || (preview ? (isVideo ? vLoading : imgLoading) : true));
 
   return (
-    <View style={{ flex: 1, borderRadius: radius, overflow: 'hidden', backgroundColor: t.colors.imageBg }}>
-      {preview && !error ? (
+    <View style={{ flex: 1, borderRadius: radius, overflow: 'hidden', backgroundColor: t.colors.imageBg }} accessibilityIgnoresInvertColors>
+      {preview && !failed ? (
         isVideo ? (
           <VideoView player={player} style={{ flex: 1 }} contentFit="contain" nativeControls />
         ) : (
@@ -104,16 +111,19 @@ export function FittedMedia({
             style={{ flex: 1 }}
             contentFit="contain"
             transition={150}
-            cachePolicy="memory-disk"
+            cachePolicy="memory"
+            recyclingKey={preview.id}
             onLoadStart={() => setImgLoading(true)}
             onLoad={() => setImgLoading(false)}
-            onError={() => setImgLoading(false)}
-            accessibilityIgnoresInvertColors
+            onError={() => {
+              setImgLoading(false);
+              setImgError(true);
+            }}
           />
         )
       ) : null}
 
-      {error ? (
+      {failed ? (
         <Overlay>
           <Ionicons name="image-outline" size={36} color={t.colors.secondary} />
           <T variant="heading" style={{ marginTop: 12, textAlign: 'center' }}>
@@ -122,11 +132,12 @@ export function FittedMedia({
           <T variant="meta" tone="secondary" style={{ textAlign: 'center', marginTop: 4 }}>
             {labels.errorBody}
           </T>
+          {onRetry ? <PrimaryButton label={labels.retry} variant="ghost" arrow={false} fullWidth={false} onPress={onRetry} style={{ marginTop: 12 }} /> : null}
         </Overlay>
       ) : showSpinner ? (
         <Overlay>
           <ActivityIndicator color={t.colors.secondary} />
-          <T variant="meta" tone="secondary" style={{ marginTop: 10 }} accessibilityLiveRegion="polite">
+          <T variant="meta" tone="secondary" style={{ marginTop: 10 }}>
             {labels.loading}
           </T>
         </Overlay>

@@ -1,3 +1,13 @@
+// Hermes on iOS ships Intl.DateTimeFormat/NumberFormat but not Intl.PluralRules.
+// Without it i18next silently falls back to a one/other rule, which is wrong for
+// Latvian (0, 10–20, 30… take the "zero" form). These polyfills are no-ops where
+// the native API exists.
+import '@formatjs/intl-getcanonicallocales/polyfill.js';
+import '@formatjs/intl-locale/polyfill.js';
+import '@formatjs/intl-pluralrules/polyfill.js';
+import '@formatjs/intl-pluralrules/locale-data/en.js';
+import '@formatjs/intl-pluralrules/locale-data/lv.js';
+
 import { getLocales } from 'expo-localization';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';

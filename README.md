@@ -60,3 +60,13 @@ build on a physical iPhone — not Expo Go, not web.
 
 No photo content, filenames, album names or EXIF ever leaves the device or reaches any
 server or log. Only keep/delete decisions and settings are stored, locally.
+
+## Design
+
+The UI implements the "Room for more" design handoff in `docs/design-handoff/`
+(tokens, EN/LV copy, motion contract, seven reference screens and an HTML prototype).
+Warm paper, ink typography, one lime accent, a terracotta mark; a floating print stack
+on Discover and a session ribbon that records each decision. Tokens live in
+`src/ui/theme.ts`; components in `src/ui/components/`. Sessions are up to 20 items with
+a real denominator; Reduce Motion (app setting or system) removes tilt and drift and
+uses short crossfades.

@@ -8,19 +8,22 @@ import { FittedMedia, type FittedMediaLabels } from './FittedMedia';
 import { PrintFrame } from './Print';
 import { T } from './Text';
 
+export type DeckCommit = 'keep' | 'remove' | 'skip';
+
 export interface SwipeDeckHandle {
   /** Animate the card out as if swiped, then fire the decision. Used by the labelled buttons. */
-  commit: (dir: 'keep' | 'remove') => void;
+  commit: (dir: DeckCommit) => void;
 }
 
 /**
  * The review card as a physical print. x follows the finger; tilt is x/18
  * clamped to ±12°; the stamp fades in as |x|/90. A commit (≥85pt, or a projected
  * end ≥120pt with clear horizontal intent) flies the card off at 240ms and only
- * then fires the decision — duplicates are blocked while animating. Anything
- * less springs back. One light haptic when crossing the threshold (latched),
- * one soft one on commit. Reduce Motion: translation without tilt, 120ms
- * crossfades, instant snapback.
+ * then fires the decision — duplicates are blocked while animating and the
+ * parent is told (`onBusyChange`) so the buttons can disable too. Anything less
+ * springs back (300ms, ζ 0.8). One light haptic when crossing the threshold
+ * (latched), one soft one on commit. Reduce Motion: translation without tilt,
+ * 120ms crossfades, instant snapback.
  */
 export const SwipeDeck = forwardRef<
   SwipeDeckHandle,
@@ -32,14 +35,26 @@ export const SwipeDeck = forwardRef<
     cardKey: string;
     caption?: string;
     meta?: string;
+    /** Full VoiceOver label: kind, index, date… built by the screen. */
+    accessibilityLabel: string;
+    accessibilityHint: string;
+    /** False while the media failed to load — Keep/Remove are then refused. */
+    canDecide: boolean;
+    canUndo: boolean;
+    /** False when the screen is covered/unfocused: pauses video. */
+    active: boolean;
     onKeep: () => void;
     onRemove: () => void;
+    onSkip: () => void;
+    onUndo: () => void;
+    onRetry: () => void;
+    onBusyChange?: (busy: boolean) => void;
     mediaLabels: FittedMediaLabels;
-    keepLabel: string;
-    removeLabel: string;
+    labels: { keep: string; remove: string; skip: string; undo: string };
     haptics: boolean;
   }
->(function SwipeDeck({ preview, loading, error, cardKey, caption, meta, onKeep, onRemove, mediaLabels, keepLabel, removeLabel, haptics }, ref) {
+>(function SwipeDeck(props, ref) {
+  const { preview, loading, error, cardKey, caption, meta, active, mediaLabels, labels, haptics } = props;
   const t = useTheme();
   const { reduce } = useMotion();
 
@@ -51,56 +66,91 @@ export const SwipeDeck = forwardRef<
   const busy = useSharedValue(0);
   const latched = useSharedValue(0);
 
-  // Latest callbacks, so the animation-completion closure never goes stale.
-  const keepRef = useRef(onKeep);
-  const removeRef = useRef(onRemove);
-  keepRef.current = onKeep;
-  removeRef.current = onRemove;
-  const hapticsRef = useRef(haptics);
-  hapticsRef.current = haptics;
+  // Latest callbacks/flags, so animation-completion closures never go stale.
+  const latest = useRef(props);
+  latest.current = props;
 
-  const thresholdHaptic = () => haptic('light', hapticsRef.current);
-  const commitHaptic = () => haptic('select', hapticsRef.current);
-  const fireKeep = () => keepRef.current();
-  const fireRemove = () => removeRef.current();
-
-  // New card: recenter instantly; the next print arrives from 98% → 100%.
-  useEffect(() => {
+  const thresholdHaptic = () => haptic('light', latest.current.haptics);
+  const commitHaptic = () => haptic('select', latest.current.haptics);
+  const fire = (dir: DeckCommit) => {
+    if (dir === 'keep') latest.current.onKeep();
+    else if (dir === 'remove') latest.current.onRemove();
+    else latest.current.onSkip();
+  };
+  const setBusy = (v: boolean) => latest.current.onBusyChange?.(v);
+  /** A fly-out that was cancelled (e.g. the app was interrupted mid-animation) must never leave the deck locked. */
+  const abort = () => {
+    busy.value = 0;
+    latched.value = 0;
     x.value = 0;
     y.value = 0;
     rot.value = 0;
     opacity.value = 1;
+    setBusy(false);
+  };
+
+  // New card: recenter instantly; the next print arrives from 98% → 100% (or crossfades).
+  useEffect(() => {
+    x.value = 0;
+    y.value = 0;
+    rot.value = 0;
     latched.value = 0;
     busy.value = 0;
-    if (reduce) scale.value = 1;
-    else {
+    setBusy(false);
+    if (reduce) {
+      scale.value = 1;
+      opacity.value = 0;
+      opacity.value = withTiming(1, { duration: motion.reduceMs });
+    } else {
+      opacity.value = 1;
       scale.value = 0.98;
       scale.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) });
     }
-  }, [cardKey, reduce, x, y, rot, opacity, scale, latched, busy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardKey, reduce]);
 
-  /** JS-side commit (buttons call it directly; the gesture via runOnJS). */
-  const commitTo = (dir: 1 | -1) => {
+  /** JS-side commit (buttons/a11y call it directly; the gesture via runOnJS). */
+  const commitTo = (dir: DeckCommit) => {
     if (busy.value) return;
+    if ((dir === 'keep' || dir === 'remove') && !latest.current.canDecide) return;
     busy.value = 1;
+    setBusy(true);
     commitHaptic();
-    const done = dir > 0 ? fireKeep : fireRemove;
-    if (reduce) {
+    const done = () => fire(dir);
+    if (reduce || dir === 'skip') {
       opacity.value = withTiming(0, { duration: motion.reduceMs }, (finished) => {
         if (finished) runOnJS(done)();
+        else runOnJS(abort)();
       });
       return;
     }
-    rot.value = withTiming(dir * 18, { duration: motion.commitMs, easing: Easing.out(Easing.cubic) });
-    x.value = withTiming(dir * 420, { duration: motion.commitMs, easing: Easing.out(Easing.cubic) });
+    const sign = dir === 'keep' ? 1 : -1;
+    rot.value = withTiming(sign * 18, { duration: motion.commitMs, easing: Easing.out(Easing.cubic) });
+    x.value = withTiming(sign * 420, { duration: motion.commitMs, easing: Easing.out(Easing.cubic) });
     opacity.value = withTiming(0, { duration: motion.commitMs }, (finished) => {
       if (finished) runOnJS(done)();
+      else runOnJS(abort)();
     });
   };
 
-  useImperativeHandle(ref, () => ({ commit: (dir) => commitTo(dir === 'keep' ? 1 : -1) }));
+  useImperativeHandle(ref, () => ({ commit: commitTo }));
 
-  const enabled = !!preview && !error;
+  const snapBack = () => {
+    'worklet';
+    latched.value = 0;
+    if (reduce) {
+      x.value = 0;
+      y.value = 0;
+      rot.value = 0;
+      return;
+    }
+    const cfg = { duration: motion.snapbackMs, dampingRatio: motion.snapbackDamping };
+    x.value = withSpring(0, cfg);
+    y.value = withSpring(0, cfg);
+    rot.value = withSpring(0, cfg);
+  };
+
+  const enabled = !!preview && !error && props.canDecide;
   const pan = Gesture.Pan()
     .enabled(enabled)
     .activeOffsetX([-12, 12])
@@ -124,28 +174,13 @@ export const SwipeDeck = forwardRef<
       const projected = tx + e.velocityX * 0.2;
       const horizontal = Math.abs(tx) > Math.abs(e.translationY);
       if (horizontal && (Math.abs(tx) >= motion.translationThreshold || Math.abs(projected) >= motion.projectedThreshold)) {
-        runOnJS(commitTo)((Math.abs(tx) >= motion.translationThreshold ? tx : projected) > 0 ? 1 : -1);
+        runOnJS(commitTo)((Math.abs(tx) >= motion.translationThreshold ? tx : projected) > 0 ? 'keep' : 'remove');
         return;
       }
-      latched.value = 0;
-      if (reduce) {
-        x.value = 0;
-        y.value = 0;
-        rot.value = 0;
-      } else {
-        x.value = withSpring(0, { damping: 16, stiffness: 180 });
-        y.value = withSpring(0, { damping: 16, stiffness: 180 });
-        rot.value = withSpring(0, { damping: 16, stiffness: 180 });
-      }
+      snapBack();
     })
     .onFinalize((_e, success) => {
-      // A cancelled touch returns the card to origin.
-      if (!success && !busy.value) {
-        latched.value = 0;
-        x.value = reduce ? 0 : withSpring(0, { damping: 16, stiffness: 180 });
-        y.value = reduce ? 0 : withSpring(0, { damping: 16, stiffness: 180 });
-        rot.value = reduce ? 0 : withSpring(0, { damping: 16, stiffness: 180 });
-      }
+      if (!success && !busy.value) snapBack();
     });
 
   const cardStyle = useAnimatedStyle(() => ({
@@ -155,32 +190,41 @@ export const SwipeDeck = forwardRef<
   const keepStamp = useAnimatedStyle(() => ({ opacity: x.value > 0 ? Math.min(x.value / 90, 1) : 0 }));
   const removeStamp = useAnimatedStyle(() => ({ opacity: x.value < 0 ? Math.min(-x.value / 90, 1) : 0 }));
 
+  const actions = [
+    ...(props.canDecide ? [{ name: 'keep', label: labels.keep }, { name: 'remove', label: labels.remove }] : []),
+    { name: 'skip', label: labels.skip },
+    ...(props.canUndo ? [{ name: 'undo', label: labels.undo }] : []),
+  ];
+
   return (
     <GestureDetector gesture={pan}>
       <Animated.View
         style={[{ flex: 1 }, cardStyle]}
         accessible
-        accessibilityLabel={[caption, meta].filter(Boolean).join(', ')}
-        accessibilityHint={`${keepLabel} / ${removeLabel}`}
-        accessibilityActions={[
-          { name: 'keep', label: keepLabel },
-          { name: 'remove', label: removeLabel },
-        ]}
+        accessibilityRole="image"
+        accessibilityLabel={props.accessibilityLabel}
+        accessibilityHint={props.accessibilityHint}
+        accessibilityActions={actions}
         onAccessibilityAction={(e) => {
-          if (e.nativeEvent.actionName === 'keep') commitTo(1);
-          if (e.nativeEvent.actionName === 'remove') commitTo(-1);
+          const a = e.nativeEvent.actionName;
+          if (a === 'keep' || a === 'remove' || a === 'skip') commitTo(a);
+          else if (a === 'undo') latest.current.onUndo();
         }}
       >
         <PrintFrame caption={caption} meta={meta} rotation={0}>
-          <FittedMedia preview={preview} loading={loading} error={error} active labels={mediaLabels} />
+          <FittedMedia preview={preview} loading={loading} error={error} active={active} labels={mediaLabels} onRetry={props.onRetry} />
         </PrintFrame>
 
         {/* Stamps: ink-bordered, tilted, fade in with the drag. Decorative only. */}
-        <Animated.View pointerEvents="none" style={[stampBase(t.colors.accent, t.colors.ink), keepStamp]} accessibilityElementsHidden importantForAccessibility="no">
-          <T style={{ fontSize: 25, fontWeight: '700', color: t.colors.ink }}>{keepLabel}</T>
+        <Animated.View pointerEvents="none" style={[stampBase(t.colors.accent, t.colors.ink), keepStamp]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <T style={{ fontSize: 25, lineHeight: 30, fontWeight: '700', color: t.colors.ink }} maxFontSizeMultiplier={1.2}>
+            {labels.keep}
+          </T>
         </Animated.View>
-        <Animated.View pointerEvents="none" style={[stampBase(t.colors.removeTint, t.colors.ink), removeStamp]} accessibilityElementsHidden importantForAccessibility="no">
-          <T style={{ fontSize: 25, fontWeight: '700', color: t.colors.ink }}>{removeLabel}</T>
+        <Animated.View pointerEvents="none" style={[stampBase(t.colors.removeTint, t.colors.ink), removeStamp]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <T style={{ fontSize: 25, lineHeight: 30, fontWeight: '700', color: t.colors.ink }} maxFontSizeMultiplier={1.2}>
+            {labels.remove}
+          </T>
         </Animated.View>
       </Animated.View>
     </GestureDetector>
@@ -192,8 +236,7 @@ function stampBase(bg: string, border: string) {
     position: 'absolute' as const,
     top: 35,
     left: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    padding: 9,
     borderWidth: 3,
     borderColor: border,
     borderRadius: 7,

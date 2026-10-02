@@ -56,6 +56,13 @@ jobs:
       - name: Patch Podfile (expo/expo#50470 workaround)
         run: ruby tools/ci/patch-podfile.rb
 
+      - name: Show generated privacy manifest, deployment target and purpose strings
+        run: |
+          echo "--- Podfile.properties.json"; cat ios/Podfile.properties.json || true
+          echo "--- PrivacyInfo.xcprivacy"; cat ios/MemorySwipe/PrivacyInfo.xcprivacy || echo "(none at app level)"
+          echo "--- Info.plist usage strings"; grep -A1 "UsageDescription" ios/MemorySwipe/Info.plist || true
+          echo "--- lv InfoPlist.strings"; cat ios/MemorySwipe/Supporting/lv.lproj/InfoPlist.strings 2>/dev/null || find ios -name "InfoPlist.strings" -exec sh -c 'echo {}; cat {}' \; || true
+
       - name: Install CocoaPods
         run: cd ios && pod install --repo-update
 

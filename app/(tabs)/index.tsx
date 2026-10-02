@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { SESSION_SIZE, applyFavoriteProtection, onlyKind, type CollectionKind } from '../../src/collections';
@@ -23,16 +23,20 @@ export default function Discover() {
   const access = useLibrary((s) => s.access);
   const items = useLibrary((s) => s.items);
   const reviewedIds = useLibrary((s) => s.reviewedIds);
+  const loading = useLibrary((s) => s.loading);
   const refresh = useLibrary((s) => s.refresh);
   const requestAccess = useLibrary((s) => s.requestAccess);
   const presentLimitedPicker = useLibrary((s) => s.presentLimitedPicker);
   const includeFavorites = useSettings((s) => s.settings.includeFavorites);
   const loadQueue = useQueue((s) => s.load);
+  const [focused, setFocused] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
+      setFocused(true);
       void refresh();
       void loadQueue();
+      return () => setFocused(false);
     }, [refresh, loadQueue]),
   );
 
@@ -46,14 +50,15 @@ export default function Discover() {
   const heroUris = heroItems.map((i) => thumbs[i.id]);
 
   const hasAccess = access === 'all' || access === 'limited';
+  const emptyLibrary = hasAccess && !loading && reviewable.length === 0;
+  const exhausted = hasAccess && reviewable.length > 0 && unreviewed.length === 0;
   const go = (kind: CollectionKind, title: string) => router.push({ pathname: '/swipe', params: { kind, key: '', title } });
 
   return (
     <Screen padded={false}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: theme.spacing.page, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {/* Brand row */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} accessible accessibilityRole="header" accessibilityLabel={t('app.name')}>
             <View style={{ width: 17, height: 22, borderRadius: 4, backgroundColor: theme.colors.destructive, transform: [{ rotate: '-12deg' }] }} />
             <T variant="meta" style={{ fontSize: 13, fontWeight: '700', letterSpacing: -0.2 }}>
               {t('app.brand')}
@@ -66,22 +71,22 @@ export default function Discover() {
             hitSlop={10}
             style={{ width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' }}
           >
-            <Ionicons name="menu-outline" size={26} color={theme.colors.text} />
+            <Ionicons name="menu" size={26} color={theme.colors.text} />
           </Pressable>
         </View>
 
         <T variant="eyebrow" tone="secondary" style={{ marginTop: 10 }}>
           {t('discover.eyebrow')}
         </T>
-        <T variant="hero" style={{ marginTop: 12 }}>
+        <T variant="hero" style={{ marginTop: 12 }} accessibilityRole="header">
           {t('discover.title')}
         </T>
-        <T variant="body" tone="secondary" style={{ marginTop: 14, fontSize: 17 }}>
+        <T variant="body" tone="secondary" style={{ marginTop: 14 }}>
           {t('discover.body')}
         </T>
 
-        <View style={{ marginTop: 18, marginBottom: 12 }}>
-          <PrintStack uris={heroUris} />
+        <View style={{ marginTop: 24, marginBottom: 16 }}>
+          <PrintStack uris={heroUris} paused={!focused} />
         </View>
 
         {!hasAccess ? (
@@ -92,11 +97,13 @@ export default function Discover() {
               onPress={() => (access === 'undetermined' ? void requestAccess() : void Linking.openSettings())}
             />
           </View>
+        ) : emptyLibrary ? (
+          <Callout title={t('empty.library')}>{t('empty.libraryBody')}</Callout>
         ) : (
           <>
-            <PrimaryButton label={t('action.random')} onPress={() => go('random', t('action.random'))} disabled={sessionCount === 0} />
+            <PrimaryButton label={t('action.random')} onPress={() => go('random', t('action.random'))} disabled={exhausted} />
             <T variant="meta" tone="secondary" style={{ textAlign: 'center', marginTop: 10, marginBottom: 22, fontSize: 11 }}>
-              {sessionCount === 0 ? t('empty.scope') : t('discover.sub', { count: sessionCount })}
+              {exhausted ? t('empty.all') : t('discover.sub', { count: sessionCount })}
             </T>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Tile title={t('discover.photos')} sub={t('discover.moments', { count: photoCount })} onPress={() => go('photos', t('discover.photos'))} />

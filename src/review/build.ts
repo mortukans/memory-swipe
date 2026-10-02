@@ -10,8 +10,9 @@ import type { MediaItem } from '../media/types';
  *  - favorites are dropped unless the user opted in (protection),
  *  - anything already reviewed (kept, queued, or deleted) is excluded, so a
  *    decision in one collection is reflected in every overlapping collection,
- *  - random sessions are shuffled by seed → the same seed replays the same
- *    order with no repeats, which is what makes a random session resumable.
+ *  - random sessions shuffle the WHOLE candidate set by seed and only then drop
+ *    reviewed ids, so the order is stable across sessions: the remaining items
+ *    keep their place, skipped items come back later, nothing repeats.
  */
 export interface BuildOpts {
   includeFavorites: boolean;
@@ -21,9 +22,8 @@ export interface BuildOpts {
 }
 
 export function buildSessionOrder(candidates: MediaItem[], opts: BuildOpts): string[] {
-  const kept = applyFavoriteProtection(candidates, opts.includeFavorites).filter(
-    (i) => !opts.reviewedIds.has(i.id),
-  );
-  const ids = kept.map((i) => i.id);
-  return opts.shuffle && opts.seed != null ? seededShuffle(ids, opts.seed) : ids;
+  const protectedList = applyFavoriteProtection(candidates, opts.includeFavorites);
+  const ids = protectedList.map((i) => i.id);
+  const ordered = opts.shuffle && opts.seed != null ? seededShuffle(ids, opts.seed) : ids;
+  return ordered.filter((id) => !opts.reviewedIds.has(id));
 }

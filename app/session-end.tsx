@@ -30,16 +30,16 @@ export default function SessionEnd() {
     <Screen>
       <TopBar eyebrow={t('session.endEyebrow')} backLabel={t('action.back')} onBack={() => router.replace('/')} />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-        <View style={{ marginTop: 24 }}>
-          <OrbitalCount count={kept} unit={t('session.kept')} />
+        <View style={{ marginTop: 16 }}>
+          <OrbitalCount count={kept} unit={t('session.kept', { count: kept })} />
         </View>
         <T variant="eyebrow" tone="secondary" style={{ textAlign: 'center', marginTop: 10 }}>
           {t('session.revisited', { count: reviewed })}
         </T>
-        <T variant="title" style={{ textAlign: 'center', marginTop: 16 }}>
+        <T variant="title" style={{ textAlign: 'center', marginTop: 16 }} accessibilityRole="header">
           {t('session.complete')}
         </T>
-        <T variant="body" tone="secondary" style={{ textAlign: 'center', marginTop: 14 }}>
+        <T variant="body" tone="secondary" style={{ textAlign: 'center', marginTop: 14 }} accessibilityLiveRegion="polite">
           {pending > 0 ? t('session.pending', { count: pending }) : t('session.nothingPending')}
         </T>
         <View style={{ flex: 1, minHeight: 24 }} />

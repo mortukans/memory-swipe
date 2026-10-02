@@ -4,7 +4,9 @@ import { useTheme } from '../theme';
 /**
  * Ink typography on paper. SF Pro via the system font; sizes from tokens.json.
  * hero 52/54 −2 · title 34/38 · heading 18 · body 16 · label 16 semibold ·
- * meta 12 · eyebrow 11 semibold uppercase. Dynamic Type stays on.
+ * meta 12 · eyebrow 11 semibold uppercase. Dynamic Type stays on; only the
+ * decorative display sizes are capped (hero 1.3×, title 1.5×, heading 2×) so
+ * layouts scroll instead of breaking, per the handoff.
  */
 export type TextVariant = 'hero' | 'title' | 'heading' | 'body' | 'label' | 'meta' | 'eyebrow';
 export type TextTone = 'default' | 'secondary' | 'destructive' | 'inverse' | 'ink' | 'accent';
@@ -19,10 +21,13 @@ const STYLES: Record<TextVariant, TextStyle> = {
   eyebrow: { fontSize: 11, lineHeight: 14, fontWeight: '600', letterSpacing: 1.7, textTransform: 'uppercase' },
 };
 
+const MAX_SCALE: Partial<Record<TextVariant, number>> = { hero: 1.3, title: 1.5, heading: 2 };
+
 export function T({
   variant = 'body',
   tone = 'default',
   style,
+  maxFontSizeMultiplier,
   ...rest
 }: TextProps & { variant?: TextVariant; tone?: TextTone }) {
   const t = useTheme();
@@ -30,7 +35,7 @@ export function T({
     tone === 'secondary'
       ? t.colors.secondary
       : tone === 'destructive'
-        ? t.colors.destructive
+        ? t.colors.destructiveText
         : tone === 'inverse'
           ? t.colors.bg
           : tone === 'ink'
@@ -38,5 +43,5 @@ export function T({
             : tone === 'accent'
               ? t.colors.accent
               : t.colors.text;
-  return <RNText {...rest} style={[STYLES[variant], { color }, style]} />;
+  return <RNText {...rest} maxFontSizeMultiplier={maxFontSizeMultiplier ?? MAX_SCALE[variant]} style={[STYLES[variant], { color }, style]} />;
 }

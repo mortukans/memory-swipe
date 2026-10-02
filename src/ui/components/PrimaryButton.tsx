@@ -8,7 +8,8 @@ type Variant = 'ink' | 'lime' | 'danger' | 'ghost';
 /**
  * The 56pt primary CTA: label left, ↗ arrow right, 22pt radius.
  * ink (default) · lime (text is ink, never white) · danger (terracotta, only for
- * the real destructive step) · ghost (text-only secondary).
+ * the real destructive step) · ghost (text-only secondary). Pressed = a gentle
+ * scale instead of a flash.
  */
 export function PrimaryButton({
   label,
@@ -17,6 +18,7 @@ export function PrimaryButton({
   arrow = true,
   disabled,
   loading,
+  fullWidth = true,
   style,
   accessibilityHint,
 }: {
@@ -26,6 +28,7 @@ export function PrimaryButton({
   arrow?: boolean;
   disabled?: boolean;
   loading?: boolean;
+  fullWidth?: boolean;
   style?: ViewStyle;
   accessibilityHint?: string;
 }) {
@@ -53,7 +56,9 @@ export function PrimaryButton({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: variant === 'ghost' ? 'center' : 'space-between',
-          opacity: isDisabled ? 0.5 : pressed ? 0.88 : 1,
+          alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          opacity: isDisabled ? 0.5 : pressed ? 0.92 : 1,
+          transform: [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
         },
         style,
       ]}
@@ -64,10 +69,10 @@ export function PrimaryButton({
         </View>
       ) : (
         <>
-          <T variant="label" style={{ color: fg }}>
+          <T variant="label" style={{ color: fg, flexShrink: 1 }}>
             {label}
           </T>
-          {arrow && variant !== 'ghost' ? <Ionicons name="arrow-up-outline" size={18} color={fg} style={{ transform: [{ rotate: '45deg' }] }} /> : null}
+          {arrow && variant !== 'ghost' ? <Ionicons name="arrow-forward" size={18} color={fg} style={{ transform: [{ rotate: '-45deg' }], marginLeft: 12 }} /> : null}
         </>
       )}
     </Pressable>

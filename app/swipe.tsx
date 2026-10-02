@@ -1,7 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import type { CollectionKind, CollectionRef } from '../src/collections';
 import { canUndo, counts, currentId, isComplete } from '../src/review/machine';
 import { useSession, type MediaFilter } from '../src/state/session';
@@ -21,10 +21,13 @@ import { useTheme } from '../src/ui/theme';
  * The session: one fitted print at a time, the ribbon recording each decision,
  * four labelled controls, and the safety line. Up to 20 items; the denominator
  * is always the real one. Completion hands off to the session-end screen.
+ * The layout scrolls (large text), controls freeze during the fly-out, and a
+ * stale session can never trigger completion for a new one.
  */
 export default function Swipe() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ kind: string; key: string; title: string; filter?: string }>();
   const collection: CollectionRef = { kind: (params.kind as CollectionKind) ?? 'random', key: params.key ?? '' };
   const filter = (params.filter || null) as MediaFilter | null;
@@ -35,6 +38,7 @@ export default function Swipe() {
   const state = useSession((s) => s.state);
   const items = useSession((s) => s.items);
   const eligible = useSession((s) => s.eligible);
+  const generation = useSession((s) => s.generation);
   const preview = useSession((s) => s.preview);
   const previewLoading = useSession((s) => s.previewLoading);
   const previewError = useSession((s) => s.previewError);
@@ -43,10 +47,25 @@ export default function Swipe() {
   const remove = useSession((s) => s.remove);
   const skip = useSession((s) => s.skip);
   const undo = useSession((s) => s.undo);
+  const retryPreview = useSession((s) => s.retryPreview);
   const deckRef = useRef<SwipeDeckHandle>(null);
+  const [animating, setAnimating] = useState(false);
+  const [focused, setFocused] = useState(true);
+  /** The generation this screen started; completion only counts for it. */
+  const myGen = useRef<number | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
 
   useEffect(() => {
-    void start(collection, filter);
+    myGen.current = null;
+    void start(collection, filter).then(() => {
+      myGen.current = useSession.getState().generation;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.kind, params.key, params.filter]);
 
@@ -59,36 +78,50 @@ export default function Swipe() {
   const cur = curId ? items[curId] : undefined;
   const caption = cur ? dateLabel(i18n.language, cur.creationTime) : '';
   const meta = cur?.kind === 'video' ? durationLabel(cur.durationSec) : '';
+  // Never show a preview that belongs to a different card than the one being decided.
+  const safePreview = preview && curId && preview.id === curId ? preview : null;
 
-  // Done: hand the facts to the session-end screen.
+  // Done: hand the facts to the session-end screen — only for the session this screen started.
   useEffect(() => {
-    if (!state || !complete || total === 0) return;
+    if (starting || !state || !complete || total === 0) return;
+    if (myGen.current === null || myGen.current !== generation) return;
     router.replace({
       pathname: '/session-end',
       params: {
         reviewed: String(c?.reviewed ?? 0),
         kept: String(c?.kept ?? 0),
-        remaining: String(Math.max(0, eligible - total)),
+        remaining: String(Math.max(0, eligible - (c?.reviewed ?? 0))),
         kind: collection.kind,
         key: collection.key,
         filter: filter ?? '',
         title,
       },
     });
+    useSession.getState().reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete]);
+  }, [complete, starting]);
 
-  const mediaLabels = { loading: t('loading.photo'), errorTitle: t('loading.error'), errorBody: t('loading.errorBody') };
+  const announceQueue = (n: number) => {
+    try {
+      AccessibilityInfo.announceForAccessibility(t('a11y.queued', { count: n }));
+    } catch {
+      /* web */
+    }
+  };
+
+  const mediaLabels = { loading: t('loading.photo'), errorTitle: t('loading.error'), errorBody: t('loading.errorBody'), retry: t('action.retry') };
+  const actionLabels = { keep: t('action.keep'), remove: t('action.remove'), skip: t('action.skip'), undo: t('action.undo') };
+  const kindLabel = cur?.kind === 'video' ? t('a11y.video') : t('a11y.photo');
+  const cardLabel = [kindLabel, t('a11y.indexOf', { index: Math.min(idx + 1, total), total }), caption, meta].filter(Boolean).join(', ');
+  const cardMinHeight = Math.min(width * 1.15, 452);
+
+  const exhausted = !starting && total === 0;
 
   return (
     <Screen>
       <TopBar eyebrow={title} backLabel={t('action.back')} />
 
-      {starting ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={theme.colors.secondary} />
-        </View>
-      ) : total === 0 ? (
+      {exhausted ? (
         <View style={{ flex: 1, justifyContent: 'center', gap: 12 }}>
           <T variant="title">{t('empty.scope')}</T>
           <T variant="body" tone="secondary">
@@ -97,33 +130,54 @@ export default function Swipe() {
           <PrimaryButton label={t('action.back')} arrow={false} onPress={() => router.back()} style={{ marginTop: 12 }} />
         </View>
       ) : (
-        <>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-            <T variant="eyebrow" tone="secondary">
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 8 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2, gap: 12 }}>
+            <T variant="eyebrow" tone="secondary" style={{ flexShrink: 1 }}>
               {t('session.label')}
             </T>
-            <T variant="meta" tone="secondary" accessibilityLiveRegion="polite">
-              {t('session.progress', { current: Math.min(idx + 1, total), total })}
+            <T variant="meta" tone="secondary">
+              {starting ? '…' : t('session.progress', { current: Math.min(idx + 1, total), total })}
             </T>
           </View>
           <View style={{ marginTop: 10, marginBottom: 18 }}>
-            <SessionRibbon total={total} marks={marks} />
+            <SessionRibbon
+              total={total}
+              marks={marks}
+              accessibilityLabel={t('a11y.ribbon', { kept: c?.kept ?? 0, removed: c?.queued ?? 0, skipped: c?.skipped ?? 0 })}
+            />
           </View>
 
-          <View style={{ flex: 1, marginBottom: 22 }}>
+          <View style={{ flex: 1, minHeight: cardMinHeight, marginBottom: 22 }}>
             <SwipeDeck
               ref={deckRef}
-              preview={preview}
-              loading={previewLoading}
+              preview={safePreview}
+              loading={starting || previewLoading}
               error={previewError}
               cardKey={curId ?? 'none'}
               caption={caption}
               meta={meta}
-              onKeep={() => void keep()}
-              onRemove={() => void remove()}
+              accessibilityLabel={cardLabel}
+              accessibilityHint={t('a11y.cardHint')}
+              canDecide={!previewError && !starting}
+              canUndo={state ? canUndo(state) : false}
+              active={focused}
+              onKeep={() => {
+                void keep();
+                announceQueue(c?.queued ?? 0);
+              }}
+              onRemove={() => {
+                void remove();
+                announceQueue((c?.queued ?? 0) + 1);
+              }}
+              onSkip={() => skip()}
+              onUndo={() => {
+                haptic('select', hapticsOn);
+                void undo();
+              }}
+              onRetry={() => void retryPreview()}
+              onBusyChange={setAnimating}
               mediaLabels={mediaLabels}
-              keepLabel={t('action.keep')}
-              removeLabel={t('action.remove')}
+              labels={actionLabels}
               haptics={hapticsOn}
             />
           </View>
@@ -132,27 +186,37 @@ export default function Swipe() {
             onUndo={() => {
               haptic('select', hapticsOn);
               void undo();
+              try {
+                AccessibilityInfo.announceForAccessibility(t('a11y.undone'));
+              } catch {
+                /* web */
+              }
             }}
             onRemove={() => deckRef.current?.commit('remove')}
             onSkip={() => {
               haptic('light', hapticsOn);
-              skip();
+              deckRef.current?.commit('skip');
             }}
             onKeep={() => deckRef.current?.commit('keep')}
             canUndo={state ? canUndo(state) : false}
-            labels={{ undo: t('action.undo'), remove: t('action.remove'), skip: t('action.skip'), keep: t('action.keep') }}
+            disabled={animating || starting}
+            decisionsDisabled={previewError}
+            labels={actionLabels}
+            hints={{ skip: t('a11y.cardHint') }}
           />
 
           <Pressable
             onPress={() => (c && c.queued > 0 ? router.push('/review') : undefined)}
-            accessibilityRole={c && c.queued > 0 ? 'button' : undefined}
+            disabled={!c || c.queued === 0}
+            accessibilityRole={c && c.queued > 0 ? 'button' : 'text'}
+            accessibilityLabel={c && c.queued > 0 ? `${t('session.safety')} ${t('session.reviewCount', { count: c.queued })}` : t('session.safety')}
             style={{ alignItems: 'center', marginTop: 16, marginBottom: 6, minHeight: 24, justifyContent: 'center' }}
           >
             <T variant="meta" tone="secondary" style={{ fontSize: 11, textAlign: 'center' }}>
               {c && c.queued > 0 ? `${t('session.safety')} · ${t('session.reviewCount', { count: c.queued })}` : t('session.safety')}
             </T>
           </Pressable>
-        </>
+        </ScrollView>
       )}
     </Screen>
   );

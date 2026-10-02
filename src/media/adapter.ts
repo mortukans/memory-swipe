@@ -87,17 +87,13 @@ export const adapter: MediaAdapter = {
   },
 
   async resolvePreview(item): Promise<MediaPreview> {
-    // We do NOT call getIsInCloud: most photos are "in iCloud" under optimised
-    // storage yet display instantly from a local thumbnail, so it both slowed
-    // every card and wrongly flagged loaded photos as still downloading.
-    if (item.kind === 'video') {
-      // iOS Photos videos play from ph://<localIdentifier> via replaceAsync.
-      // getUri() returns a file:// path that doesn't play, so we use the id,
-      // which is already a ph:// URI. No native call needed.
-      const uri = item.id.startsWith('ph://') ? item.id : `ph://${item.id}`;
-      return { id: item.id, kind: item.kind, uri, width: item.width, height: item.height, durationSec: item.durationSec, needsDownload: false };
-    }
-    const uri = await new Asset(item.id).getUri();
+    // The asset id is already a ph://<localIdentifier> URI, and both renderers
+    // consume it directly: expo-image's Photos loader requests a rendition
+    // sized to the view (never the full original, never a forced iCloud
+    // download of the master), and expo-video plays it via replaceAsync.
+    // getUri() would instead export the full-size original to disk for every
+    // card, so it is deliberately not used here. No native round-trip at all.
+    const uri = item.id.startsWith('ph://') ? item.id : `ph://${item.id}`;
     return {
       id: item.id,
       kind: item.kind,
