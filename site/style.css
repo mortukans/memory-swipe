@@ -1,0 +1,66 @@
+:root {
+  --paper: #F5F2E9;
+  --ink: #242A25;
+  --secondary: #5F675E;
+  --surface: #FFFEF8;
+  --lime: #D8ED91;
+  --terracotta: #C04E31;
+  --line: rgba(36, 42, 37, 0.12);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #202720;
+    --ink: #F3F1E7;
+    --secondary: #B7BDB2;
+    --surface: #36402F;
+    --line: rgba(243, 241, 231, 0.14);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 680px; margin: 0 auto; padding: 48px 20px 64px; }
+header { margin-bottom: 40px; }
+.mark {
+  display: inline-block; width: 22px; height: 28px; border-radius: 5px;
+  background: var(--terracotta); transform: rotate(-12deg); margin-bottom: 18px;
+}
+.eyebrow {
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--secondary); margin: 0 0 14px;
+}
+h1 {
+  font-size: clamp(40px, 9vw, 56px); line-height: 1.02; letter-spacing: -0.02em;
+  font-weight: 400; margin: 0 0 18px;
+}
+h2 { font-size: 26px; letter-spacing: -0.01em; font-weight: 500; margin: 36px 0 12px; }
+h3 { font-size: 19px; font-weight: 600; margin: 28px 0 8px; }
+.lede { font-size: 19px; color: var(--secondary); margin: 0; }
+p, li { color: var(--ink); }
+ul { padding-left: 20px; }
+li + li { margin-top: 8px; }
+a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.links { display: flex; gap: 10px; flex-wrap: wrap; margin: 40px 0 0; }
+.links a {
+  display: inline-block; padding: 14px 20px; border-radius: 22px;
+  background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 600;
+}
+.links a:nth-child(2) { background: var(--lime); color: #242A25; }
+.callout {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  padding: 16px 18px; margin: 20px 0;
+}
+.lang { display: flex; gap: 8px; margin-bottom: 28px; }
+.lang a {
+  font-size: 13px; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line);
+  text-decoration: none; color: var(--ink); background: var(--surface);
+}
+.lang a[aria-current="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--secondary); font-size: 14px; }
+footer p { color: var(--secondary); }
+.meta { color: var(--secondary); font-size: 14px; }
