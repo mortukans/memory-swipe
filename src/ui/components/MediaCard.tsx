@@ -36,13 +36,34 @@ export function MediaCard({
 }) {
   const t = useTheme();
   const isVideo = preview?.kind === 'video';
+  const videoUri = isVideo ? preview?.uri ?? null : null;
 
-  const player = useVideoPlayer(isVideo ? preview!.uri : null, (p) => {
+  // One reusable player with NO initial source. iOS Photos (ph://) URIs must be
+  // loaded via replaceAsync — passing one as the synchronous initial source
+  // renders a black screen with controls.
+  const player = useVideoPlayer(null, (p) => {
     p.loop = true;
     p.muted = true;
   });
 
-  // Pause when this card is not active (e.g. mid-swipe-out or after a decision).
+  // Load the current video asynchronously (this is what makes ph:// URIs work).
+  useEffect(() => {
+    if (!player || !videoUri) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        await player.replaceAsync(videoUri);
+        if (!cancelled && active) player.play();
+      } catch {
+        /* asset unavailable / player released */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [player, videoUri, active]);
+
+  // Play only while this card is the active one.
   useEffect(() => {
     if (!player) return;
     try {
@@ -51,7 +72,7 @@ export function MediaCard({
     } catch {
       /* player may have been released */
     }
-  }, [player, active, isVideo, preview?.uri]);
+  }, [player, active, isVideo]);
 
   return (
     <View

@@ -83,6 +83,20 @@ export default function HomeScreen() {
     [i18n.language, t],
   );
 
+  // One memoised pass for the Browse counts (the library can hold thousands of items).
+  const browse = useMemo(() => {
+    const stat = (list: typeof items) => {
+      const r = applyFavoriteProtection(list, includeFavorites);
+      return { total: r.length, remaining: r.filter((i) => !reviewedIds.has(i.id)).length };
+    };
+    return {
+      photos: stat(onlyKind(items, 'photo')),
+      videos: stat(onlyKind(items, 'video')),
+      shorts: stat(shortVideos(items, shortMax)),
+      longs: stat(longVideos(items, shortMax)),
+    };
+  }, [items, shortMax, includeFavorites, reviewedIds]);
+
   const go = (kind: CollectionKind, key = '', title = '') =>
     router.push({ pathname: '/swipe', params: { kind, key, title } });
 
@@ -154,10 +168,10 @@ export default function HomeScreen() {
         </Section>
 
         <Section title={t('home.sections.browse')}>
-          <CollectionTile title={t('home.collections.photos')} icon="image-outline" remaining={remainingOf(onlyKind(items, 'photo'))} total={totalOf(onlyKind(items, 'photo'))} onPress={() => go('photos', '', t('home.collections.photos'))} />
-          <CollectionTile title={t('home.collections.videos')} icon="videocam-outline" remaining={remainingOf(onlyKind(items, 'video'))} total={totalOf(onlyKind(items, 'video'))} onPress={() => go('videos', '', t('home.collections.videos'))} />
-          <CollectionTile title={t('home.collections.shortVideos')} icon="timer-outline" remaining={remainingOf(shortVideos(items, shortMax))} total={totalOf(shortVideos(items, shortMax))} onPress={() => go('short-videos', '', t('home.collections.shortVideos'))} />
-          <CollectionTile title={t('home.collections.longVideos')} icon="film-outline" remaining={remainingOf(longVideos(items, shortMax))} total={totalOf(longVideos(items, shortMax))} onPress={() => go('long-videos', '', t('home.collections.longVideos'))} />
+          <CollectionTile title={t('home.collections.photos')} icon="image-outline" remaining={browse.photos.remaining} total={browse.photos.total} onPress={() => go('photos', '', t('home.collections.photos'))} />
+          <CollectionTile title={t('home.collections.videos')} icon="videocam-outline" remaining={browse.videos.remaining} total={browse.videos.total} onPress={() => go('videos', '', t('home.collections.videos'))} />
+          <CollectionTile title={t('home.collections.shortVideos')} icon="timer-outline" remaining={browse.shorts.remaining} total={browse.shorts.total} onPress={() => go('short-videos', '', t('home.collections.shortVideos'))} />
+          <CollectionTile title={t('home.collections.longVideos')} icon="film-outline" remaining={browse.longs.remaining} total={browse.longs.total} onPress={() => go('long-videos', '', t('home.collections.longVideos'))} />
         </Section>
 
         {months.length > 0 ? (

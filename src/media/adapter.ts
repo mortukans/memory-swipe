@@ -88,13 +88,12 @@ export const adapter: MediaAdapter = {
 
   async resolvePreview(item): Promise<MediaPreview> {
     const a = new Asset(item.id);
-    const uri = await a.getUri();
-    let needsDownload = false;
-    try {
-      needsDownload = await a.getIsInCloud();
-    } catch {
-      needsDownload = false; // getIsInCloud is iOS-only
-    }
+    // Run both native calls concurrently so a card resolves in one round-trip,
+    // not two. getIsInCloud is iOS-only and may reject elsewhere.
+    const [uri, needsDownload] = await Promise.all([
+      a.getUri(),
+      a.getIsInCloud().catch(() => false),
+    ]);
     return {
       id: item.id,
       kind: item.kind,

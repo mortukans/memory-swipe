@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { create } from 'zustand';
 import {
   collectionId as collectionIdOf,
@@ -41,6 +42,41 @@ interface SessionState {
 
 let previewSeq = 0;
 
+/** Resolved previews cached for the current session, so a prefetched card is instant. */
+const previewCache = new Map<string, MediaPreview>();
+
+const fallbackItem = (id: string): MediaItem => ({
+  id,
+  kind: 'photo',
+  creationTime: null,
+  modificationTime: null,
+  durationSec: null,
+  width: 0,
+  height: 0,
+  isFavorite: false,
+});
+
+async function resolveAndCache(item: MediaItem): Promise<MediaPreview> {
+  const hit = previewCache.get(item.id);
+  if (hit) return hit;
+  const preview = await media.resolvePreview(item);
+  previewCache.set(item.id, preview);
+  return preview;
+}
+
+/** Warm the next couple of cards so forward swipes don't wait on a round-trip. */
+function prefetchAhead(order: string[], index: number, items: Record<string, MediaItem>): void {
+  for (let k = 1; k <= 2; k++) {
+    const id = order[index + k];
+    if (!id || previewCache.has(id) || !items[id]) continue;
+    void resolveAndCache(items[id])
+      .then((p) => {
+        if (p.kind === 'photo') void Image.prefetch(p.uri).catch(() => {});
+      })
+      .catch(() => {});
+  }
+}
+
 /** Scope the library index down to a collection's candidate items. */
 async function candidatesFor(c: CollectionRef): Promise<MediaItem[]> {
   const { items } = useLibrary.getState();
@@ -80,6 +116,7 @@ export const useSession = create<SessionState>((set, get) => ({
   starting: false,
 
   start: async (collection) => {
+    previewCache.clear();
     set({ starting: true, collection, state: null, preview: null, previewError: false });
     const { settings } = useSettings.getState();
     const { reviewedIds } = useLibrary.getState();
@@ -99,18 +136,29 @@ export const useSession = create<SessionState>((set, get) => ({
   loadCurrentPreview: async () => {
     const st = get().state;
     const id = st ? currentId(st) : undefined;
-    if (!id) {
+    if (!st || !id) {
       set({ preview: null, previewLoading: false, previewError: false });
       return;
     }
-    const item = get().items[id];
+    const items = get().items;
+    const item = items[id] ?? fallbackItem(id);
+
+    // Cache hit (prefetched): show instantly, no spinner.
+    const cached = previewCache.get(id);
+    if (cached) {
+      set({ preview: cached, previewLoading: false, previewError: false });
+      prefetchAhead(st.order, st.index, items);
+      return;
+    }
+
     const seq = ++previewSeq;
     set({ previewLoading: true, previewError: false, preview: null });
     try {
-      const preview = await media.resolvePreview(
-        item ?? { id, kind: 'photo', creationTime: null, modificationTime: null, durationSec: null, width: 0, height: 0, isFavorite: false },
-      );
-      if (seq === previewSeq) set({ preview, previewLoading: false });
+      const preview = await resolveAndCache(item);
+      if (seq === previewSeq) {
+        set({ preview, previewLoading: false });
+        prefetchAhead(st.order, st.index, items);
+      }
     } catch {
       if (seq === previewSeq) set({ previewError: true, previewLoading: false, preview: null });
     }
