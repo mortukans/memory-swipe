@@ -91,15 +91,11 @@ export const adapter: MediaAdapter = {
     // storage yet display instantly from a local thumbnail, so it both slowed
     // every card and wrongly flagged loaded photos as still downloading.
     if (item.kind === 'video') {
-      // iOS Photos videos play from ph://<localIdentifier>, not from getUri().
+      // iOS Photos videos play from ph://<localIdentifier> via replaceAsync.
+      // getUri() returns a file:// path that doesn't play, so we use the id,
+      // which is already a ph:// URI. No native call needed.
       const uri = item.id.startsWith('ph://') ? item.id : `ph://${item.id}`;
-      let debugUri: string | undefined;
-      try {
-        debugUri = await new Asset(item.id).getUri(); // temporary: for diagnosis
-      } catch {
-        debugUri = undefined;
-      }
-      return { id: item.id, kind: item.kind, uri, width: item.width, height: item.height, durationSec: item.durationSec, needsDownload: false, debugUri };
+      return { id: item.id, kind: item.kind, uri, width: item.width, height: item.height, durationSec: item.durationSec, needsDownload: false };
     }
     const uri = await new Asset(item.id).getUri();
     return {

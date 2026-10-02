@@ -7,10 +7,6 @@ import type { MediaPreview } from '../../media/types';
 import { useTheme } from '../theme';
 import { T } from './Text';
 
-// Temporary: show the raw uri/id + video status on each card to diagnose video
-// playback on device. Flip to false once videos are confirmed working.
-const DEBUG_MEDIA = true;
-
 export interface MediaCardLabels {
   loading: string;
   unavailableTitle: string;
@@ -43,7 +39,6 @@ export function MediaCard({
 
   const [imgLoading, setImgLoading] = useState(true);
   const [vLoading, setVLoading] = useState(true);
-  const [debug, setDebug] = useState('');
 
   // Reset loading state whenever the shown asset changes.
   useEffect(() => {
@@ -59,10 +54,9 @@ export function MediaCard({
   // Capture video status / errors (drives the spinner + the debug line).
   useEffect(() => {
     if (!player) return;
-    const sub = player.addListener('statusChange', (payload: { status?: string; error?: { message?: string } }) => {
+    const sub = player.addListener('statusChange', (payload: { status?: string }) => {
       const status = payload?.status ?? '?';
       setVLoading(status === 'loading' || status === 'idle');
-      if (DEBUG_MEDIA) setDebug(`st:${status}${payload?.error?.message ? ' e:' + payload.error.message.slice(0, 24) : ''}`);
     });
     return () => sub.remove();
   }, [player]);
@@ -75,8 +69,8 @@ export function MediaCard({
       try {
         await player.replaceAsync(videoSource);
         if (!cancelled && active) player.play();
-      } catch (e) {
-        if (DEBUG_MEDIA && !cancelled) setDebug(`replErr:${(e as Error)?.message?.slice(0, 30) ?? 'err'}`);
+      } catch {
+        /* asset unavailable / player released */
       }
     })();
     return () => {
@@ -139,14 +133,6 @@ export function MediaCard({
             </Overlay>
           )}
 
-          {DEBUG_MEDIA ? (
-            <View style={{ position: 'absolute', bottom: 6, left: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.65)', padding: 5, borderRadius: 6 }}>
-              <T variant="caption" style={{ color: '#fff', fontSize: 10 }} numberOfLines={3}>
-                {preview.kind} src:{preview.uri.slice(0, 22)} id:{preview.id.slice(0, 22)}
-                {isVideo ? ` getUri:${(preview.debugUri ?? 'none').slice(0, 22)} ${debug}` : ''}
-              </T>
-            </View>
-          ) : null}
         </>
       ) : error ? (
         <Overlay>
