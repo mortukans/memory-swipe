@@ -1,0 +1,13 @@
+{
+  "name": "memory-swipe-screenshots",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "compose": "node compose.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.63.0",
+    "sharp": "^0.35.5"
+  }
+}

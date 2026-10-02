@@ -39,9 +39,8 @@ jobs:
       - name: Select Xcode (SDK 57 needs Xcode 26.1/26.2)
         run: |
           ls -d /Applications/Xcode*.app
-          X=$(ls -d /Applications/Xcode_26.2*.app 2>/dev/null | sort -V | tail -1)
-          [ -z "$X" ] && X=$(ls -d /Applications/Xcode_26.1*.app 2>/dev/null | sort -V | tail -1)
-          [ -z "$X" ] && { echo "No Xcode 26.1/26.2 on this runner"; exit 1; }
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -z "$X" ] && { echo "No Xcode 26.x on this runner"; exit 1; }
           sudo xcode-select -s "$X" && xcodebuild -version
 
       - name: Install JS deps
@@ -83,6 +82,5 @@ jobs:
           name: build-output
           path: |
             build/*.ipa
-            fastlane/certs/*
             ~/Library/Logs/gym/*.log
           if-no-files-found: ignore

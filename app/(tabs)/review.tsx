@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Alert, findNodeHandle, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useLibrary } from '../../src/state/library';
 import { useQueue } from '../../src/state/queue';
 import { useSettings } from '../../src/state/settings';
@@ -53,8 +53,7 @@ export default function Review() {
 
   const restoreFocus = () => {
     try {
-      const tag = findNodeHandle(deleteRef.current);
-      if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
+      if (deleteRef.current) AccessibilityInfo.sendAccessibilityEvent(deleteRef.current, 'focus');
     } catch {
       /* web */
     }

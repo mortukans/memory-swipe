@@ -80,7 +80,6 @@ platform :ios do
       ipa: "build/MemorySwipe.ipa",
       skip_waiting_for_build_processing: true,
       distribute_external: false,
-      changelog: "Automated build #{ENV['BUILD_NUMBER']}",
     )
   end
 end

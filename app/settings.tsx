@@ -16,8 +16,8 @@ import { Toggle } from '../src/ui/components/Toggle';
 import { TopBar } from '../src/ui/components/TopBar';
 import { useTheme } from '../src/ui/theme';
 
-export const PRIVACY_URL = 'https://mortukans.github.io/memory-swipe/privacy';
-export const SUPPORT_URL = 'https://mortukans.github.io/memory-swipe/support';
+export const PRIVACY_URL = 'https://mortukans.github.io/memory-swipe/privacy/';
+export const SUPPORT_URL = 'https://mortukans.github.io/memory-swipe/support/';
 
 /** Settings: small details, your way. Reset clears decisions only, with confirmation. */
 export default function SettingsScreen() {

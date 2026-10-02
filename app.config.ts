@@ -28,6 +28,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       CFBundleAllowMixedLocalizations: true,
       CFBundleLocalizations: ['en', 'lv'],
     },
+    // App-level privacy manifest: no tracking, nothing collected. The accessed-API
+    // reasons cover what the dependencies touch (UserDefaults, file timestamps via
+    // SQLite/Photos, disk space, boot time) so Xcode's Privacy Report is complete.
+    privacyManifests: {
+      NSPrivacyTracking: false,
+      NSPrivacyCollectedDataTypes: [],
+      NSPrivacyAccessedAPITypes: [
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] },
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp', NSPrivacyAccessedAPITypeReasons: ['C617.1', '0A2A.1'] },
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace', NSPrivacyAccessedAPITypeReasons: ['E174.1', '85F4.1'] },
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime', NSPrivacyAccessedAPITypeReasons: ['35F9.1'] },
+      ],
+    },
   },
   android: {
     package: BUNDLE_ID,
@@ -36,7 +49,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: { favicon: './assets/favicon.png', bundler: 'metro' },
   plugins: [
     'expo-router',
-    'expo-localization',
+    ['expo-localization', { supportedLocales: ['en', 'lv'] }],
     'expo-sqlite',
     [
       'expo-splash-screen',

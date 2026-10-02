@@ -62,7 +62,7 @@ const iconSvg = `
 
 // Splash mark on transparent: one print + the terracotta mark (shown on paper / dark paper).
 const splashSvg = `
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="1024" height="1024" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <g transform="translate(140 96) rotate(-8) scale(2.2)">
     ${print('s', landscape('s', '#DCE8EC', '#B7CBD1', '#7FA0A5', '#3F6367', '#E6B183'))}
   </g>
