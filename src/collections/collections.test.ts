@@ -59,9 +59,9 @@ describe('month grouping', () => {
 });
 
 describe('duration classification', () => {
-  it('uses a strict boundary: < 30s short, >= 30s long', () => {
+  it('uses non-overlapping semantics: <= 30s short, > 30s long', () => {
     expect(videoLength(video('a', 29.9))).toBe('short');
-    expect(videoLength(video('b', 30))).toBe('long');
+    expect(videoLength(video('b', 30))).toBe('short');
     expect(videoLength(video('c', 30.1))).toBe('long');
   });
   it('never classifies an unknown duration as short', () => {

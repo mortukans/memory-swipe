@@ -1,47 +1,42 @@
 import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
-import { font as fontTokens, useTheme } from '../theme';
+import { useTheme } from '../theme';
 
-type Variant = 'display' | 'title' | 'heading' | 'body' | 'label' | 'caption';
-type Tone = 'default' | 'dim' | 'faint' | 'accent' | 'keep' | 'remove' | 'danger' | 'inverse';
+/**
+ * Ink typography on paper. SF Pro via the system font; sizes from tokens.json.
+ * hero 52/54 −2 · title 34/38 · heading 18 · body 16 · label 16 semibold ·
+ * meta 12 · eyebrow 11 semibold uppercase. Dynamic Type stays on.
+ */
+export type TextVariant = 'hero' | 'title' | 'heading' | 'body' | 'label' | 'meta' | 'eyebrow';
+export type TextTone = 'default' | 'secondary' | 'destructive' | 'inverse' | 'ink' | 'accent';
 
-const WEIGHT: Record<Variant, TextStyle['fontWeight']> = {
-  display: '800',
-  title: '700',
-  heading: '700',
-  body: '400',
-  label: '600',
-  caption: '500',
+const STYLES: Record<TextVariant, TextStyle> = {
+  hero: { fontSize: 52, lineHeight: 54, letterSpacing: -2, fontWeight: '400' },
+  title: { fontSize: 34, lineHeight: 38, letterSpacing: -1.3, fontWeight: '400' },
+  heading: { fontSize: 18, lineHeight: 24, fontWeight: '600' },
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' },
+  label: { fontSize: 16, lineHeight: 20, fontWeight: '600' },
+  meta: { fontSize: 12, lineHeight: 16, fontWeight: '400' },
+  eyebrow: { fontSize: 11, lineHeight: 14, fontWeight: '600', letterSpacing: 1.7, textTransform: 'uppercase' },
 };
 
-/** Themed text honouring Dynamic Type (allowFontScaling stays on by default). */
 export function T({
   variant = 'body',
   tone = 'default',
   style,
-  weight,
   ...rest
-}: TextProps & { variant?: Variant; tone?: Tone; weight?: TextStyle['fontWeight'] }) {
+}: TextProps & { variant?: TextVariant; tone?: TextTone }) {
   const t = useTheme();
   const color =
-    tone === 'dim'
-      ? t.colors.textDim
-      : tone === 'faint'
-        ? t.colors.textFaint
-        : tone === 'accent'
-          ? t.colors.accent
-          : tone === 'keep'
-            ? t.colors.keep
-            : tone === 'remove'
-              ? t.colors.remove
-              : tone === 'danger'
-                ? t.colors.danger
-                : tone === 'inverse'
-                  ? t.colors.accentText
-                  : t.colors.text;
-  return (
-    <RNText
-      {...rest}
-      style={[{ color, fontSize: fontTokens[variant], fontWeight: weight ?? WEIGHT[variant], lineHeight: fontTokens[variant] * 1.3 }, style]}
-    />
-  );
+    tone === 'secondary'
+      ? t.colors.secondary
+      : tone === 'destructive'
+        ? t.colors.destructive
+        : tone === 'inverse'
+          ? t.colors.bg
+          : tone === 'ink'
+            ? t.colors.ink
+            : tone === 'accent'
+              ? t.colors.accent
+              : t.colors.text;
+  return <RNText {...rest} style={[STYLES[variant], { color }, style]} />;
 }

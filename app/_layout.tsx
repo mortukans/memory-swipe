@@ -27,15 +27,12 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
     })();
   }, [loadSettings, checkAccess]);
 
-  // Keep i18n in sync with the chosen language.
   useEffect(() => {
     applyLanguage(language);
   }, [language]);
 
   const t = useTheme();
-  if (!booted || !settingsReady) {
-    return <View style={{ flex: 1, backgroundColor: t.colors.bg }} />;
-  }
+  if (!booted || !settingsReady) return <View style={{ flex: 1, backgroundColor: t.colors.bg }} />;
   return <>{children}</>;
 }
 
@@ -53,11 +50,10 @@ export default function RootLayout() {
               animation: 'slide_from_right',
             }}
           >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
             <Stack.Screen name="swipe" />
-            <Stack.Screen name="review" options={{ presentation: 'card' }} />
-            <Stack.Screen name="result" options={{ animation: 'fade' }} />
+            <Stack.Screen name="session-end" options={{ animation: 'fade' }} />
             <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
           </Stack>
         </Bootstrap>

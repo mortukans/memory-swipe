@@ -8,8 +8,11 @@ import type { MediaItem, MediaKind } from '../media/types';
  * as a short video, how a random session is ordered) fully unit-testable.
  */
 
-/** Product default, not an iOS category. Videos strictly shorter than this are "short". */
+/** Product default, not an iOS category. Videos of at most this length are "short". */
 export const DEFAULT_SHORT_VIDEO_MAX_SEC = 30;
+
+/** A session is at most this many items (fewer when the scope has fewer left). */
+export const SESSION_SIZE = 20;
 
 export type CollectionKind =
   | 'random'
@@ -88,11 +91,14 @@ export const applyFavoriteProtection = (items: MediaItem[], includeFavorites: bo
 
 export type VideoLength = 'short' | 'long' | 'unknown';
 
-/** A video with no known duration is "unknown" — it never silently counts as short. */
+/**
+ * Non-overlapping semantics: short = duration ≤ threshold, long = duration > threshold.
+ * A video with no known duration is "unknown" — it never silently counts as short.
+ */
 export function videoLength(item: MediaItem, shortMaxSec = DEFAULT_SHORT_VIDEO_MAX_SEC): VideoLength {
   if (item.kind !== 'video') return 'unknown';
   if (item.durationSec == null) return 'unknown';
-  return item.durationSec < shortMaxSec ? 'short' : 'long';
+  return item.durationSec <= shortMaxSec ? 'short' : 'long';
 }
 
 export const shortVideos = (items: MediaItem[], shortMaxSec = DEFAULT_SHORT_VIDEO_MAX_SEC): MediaItem[] =>

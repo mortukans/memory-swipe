@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { create } from 'zustand';
 import {
+  SESSION_SIZE,
   collectionId as collectionIdOf,
   hashSeed,
   longVideos,
@@ -21,8 +22,14 @@ import { useSettings } from './settings';
  * it happens so progress survives a restart. Skips are session-only and never
  * persisted. Nothing here deletes anything — see src/state/queue.ts.
  */
+/** Optional media filter layered on a scope (Library chips: photos / videos / short / long). */
+export type MediaFilter = 'photo' | 'video' | 'short' | 'long';
+
 interface SessionState {
   collection: CollectionRef | null;
+  filter: MediaFilter | null;
+  /** How many eligible (unreviewed) items the scope had when this session started. */
+  eligible: number;
   state: ReviewState | null;
   /** id -> item for everything in this session (kind, duration, dimensions). */
   items: Record<string, MediaItem>;
@@ -31,7 +38,7 @@ interface SessionState {
   previewError: boolean;
   starting: boolean;
 
-  start: (collection: CollectionRef) => Promise<void>;
+  start: (collection: CollectionRef, filter?: MediaFilter | null) => Promise<void>;
   loadCurrentPreview: () => Promise<void>;
   keep: () => Promise<void>;
   remove: () => Promise<void>;
@@ -77,27 +84,51 @@ function prefetchAhead(order: string[], index: number, items: Record<string, Med
   }
 }
 
-/** Scope the library index down to a collection's candidate items. */
-async function candidatesFor(c: CollectionRef): Promise<MediaItem[]> {
-  const { items } = useLibrary.getState();
-  const shortMax = useSettings.getState().settings.shortVideoMaxSec;
-  switch (c.kind) {
-    case 'album':
-      return media.queryAlbum(c.key);
-    case 'photos':
+/** Apply an optional media filter to a scoped list. */
+export function applyFilter(items: MediaItem[], filter: MediaFilter | null | undefined, shortMax: number): MediaItem[] {
+  switch (filter) {
+    case 'photo':
       return onlyKind(items, 'photo');
-    case 'videos':
+    case 'video':
       return onlyKind(items, 'video');
-    case 'short-videos':
+    case 'short':
       return shortVideos(items, shortMax);
-    case 'long-videos':
+    case 'long':
       return longVideos(items, shortMax);
-    case 'month':
-      return items.filter((i) => monthMatches(i, c.key));
-    case 'random':
     default:
       return items;
   }
+}
+
+/** Scope the library index down to a collection's candidate items. */
+async function candidatesFor(c: CollectionRef, filter: MediaFilter | null | undefined): Promise<MediaItem[]> {
+  const { items } = useLibrary.getState();
+  const shortMax = useSettings.getState().settings.shortVideoMaxSec;
+  let base: MediaItem[];
+  switch (c.kind) {
+    case 'album':
+      base = await media.queryAlbum(c.key);
+      break;
+    case 'photos':
+      base = onlyKind(items, 'photo');
+      break;
+    case 'videos':
+      base = onlyKind(items, 'video');
+      break;
+    case 'short-videos':
+      base = shortVideos(items, shortMax);
+      break;
+    case 'long-videos':
+      base = longVideos(items, shortMax);
+      break;
+    case 'month':
+      base = items.filter((i) => monthMatches(i, c.key));
+      break;
+    case 'random':
+    default:
+      base = items;
+  }
+  return applyFilter(base, filter, shortMax);
 }
 
 function monthMatches(item: MediaItem, key: string): boolean {
@@ -108,6 +139,8 @@ function monthMatches(item: MediaItem, key: string): boolean {
 
 export const useSession = create<SessionState>((set, get) => ({
   collection: null,
+  filter: null,
+  eligible: 0,
   state: null,
   items: {},
   preview: null,
@@ -115,21 +148,23 @@ export const useSession = create<SessionState>((set, get) => ({
   previewError: false,
   starting: false,
 
-  start: async (collection) => {
+  start: async (collection, filter = null) => {
     previewCache.clear();
-    set({ starting: true, collection, state: null, preview: null, previewError: false });
+    set({ starting: true, collection, filter, state: null, preview: null, previewError: false });
     const { settings } = useSettings.getState();
     const { reviewedIds } = useLibrary.getState();
-    const candidates = await candidatesFor(collection);
-    const order = buildSessionOrder(candidates, {
+    const candidates = await candidatesFor(collection, filter);
+    const eligibleOrder = buildSessionOrder(candidates, {
       includeFavorites: settings.includeFavorites,
       reviewedIds,
       shuffle: collection.kind === 'random',
-      seed: hashSeed(collectionIdOf(collection)),
+      seed: hashSeed(collectionIdOf(collection) + (filter ?? '')),
     });
+    // A session is a batch of up to SESSION_SIZE; the denominator is always real.
+    const order = eligibleOrder.slice(0, SESSION_SIZE);
     const itemsById: Record<string, MediaItem> = {};
     for (const it of candidates) itemsById[it.id] = it;
-    set({ state: createReview(order), items: itemsById, starting: false });
+    set({ state: createReview(order), items: itemsById, eligible: eligibleOrder.length, starting: false });
     await get().loadCurrentPreview();
   },
 
@@ -187,7 +222,8 @@ export const useSession = create<SessionState>((set, get) => ({
     await get().loadCurrentPreview();
   },
 
-  reset: () => set({ collection: null, state: null, items: {}, preview: null, previewError: false, previewLoading: false }),
+  reset: () =>
+    set({ collection: null, filter: null, eligible: 0, state: null, items: {}, preview: null, previewError: false, previewLoading: false }),
 }));
 
 async function applyDecision(

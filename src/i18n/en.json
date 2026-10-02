@@ -1,143 +1,157 @@
 {
-  "app": {
-    "name": "Memory Swipe",
-    "tagline": "Rediscover your memories. Make room for new ones."
-  },
-  "common": {
-    "cancel": "Cancel",
-    "done": "Done",
-    "back": "Back",
-    "retry": "Retry",
-    "loading": "Loading…",
-    "continue": "Continue",
-    "keep": "Keep",
-    "delete": "Delete",
-    "settings": "Settings",
-    "close": "Close"
-  },
-  "onboarding": {
-    "slide1Title": "Rediscover your memories",
-    "slide1Body": "Swipe through your photos and videos and enjoy the moments you forgot you had.",
-    "slide2Title": "Keep what matters",
-    "slide2Body": "Swipe right to keep. Swipe left to set a photo aside for deletion.",
-    "slide3Title": "Review before deleting",
-    "slide3Body": "Nothing is ever deleted by a swipe. You review everything and confirm first.",
-    "slide4Title": "Everything stays on your device",
-    "slide4Body": "Your photos are never uploaded. All browsing and decisions happen on your iPhone.",
-    "next": "Next",
-    "getStarted": "Get started"
-  },
-  "permission": {
-    "title": "Allow access to your photos",
-    "body": "Memory Swipe needs access to your photo library to show your photos and videos. It only ever reads them to display them, and never uploads anything.",
-    "allow": "Allow photo access",
-    "deniedTitle": "Photo access is off",
-    "deniedBody": "To use Memory Swipe, turn on photo access in Settings.",
-    "openSettings": "Open Settings",
-    "limitedTitle": "You've shared selected photos",
-    "limitedBody": "Memory Swipe can only see the photos you selected. Counts reflect just that selection.",
-    "manageSelection": "Change selected photos",
-    "emptyTitle": "No photos yet",
-    "emptyBody": "When you have photos and videos on this device, they'll show up here."
-  },
-  "home": {
-    "greeting": "What would you like to revisit?",
-    "reviewQueue": "Review for deletion",
-    "reviewQueueCount_one": "{{count}} item waiting",
-    "reviewQueueCount_other": "{{count}} items waiting",
-    "allReviewed": "All caught up — nothing left to review here.",
-    "progress": "{{reviewed}} of {{total}} reviewed",
-    "nItems_one": "{{count}} item",
-    "nItems_other": "{{count}} items",
-    "sections": {
-      "quick": "Quick start",
-      "browse": "Browse",
-      "months": "By month",
-      "albums": "Albums"
-    },
-    "collections": {
-      "random": "Random memories",
-      "randomSub": "A shuffled mix to rediscover",
-      "photos": "Photos",
-      "videos": "Videos",
-      "shortVideos": "Short videos",
-      "longVideos": "Long videos",
-      "months": "Months",
-      "albums": "Albums",
-      "unknownMonth": "Unknown date"
-    },
-    "startTitle": "How many this session?",
-    "batch": "{{count}}",
-    "all": "All",
-    "continueBrowsing": "Continue"
-  },
-  "swipe": {
-    "position": "{{index}} of {{total}}",
+  "app": { "name": "Memory Swipe", "brand": "memory swipe" },
+
+  "nav": { "discover": "Discover", "library": "Library", "review": "Review" },
+
+  "action": {
+    "random": "Surprise me",
     "keep": "Keep",
     "remove": "Remove",
     "skip": "Skip",
     "undo": "Undo",
-    "loadingPhoto": "Loading…",
-    "unavailableTitle": "Can't show this one",
-    "unavailableBody": "This item couldn't be loaded. You can skip it.",
-    "iCloudTitle": "Downloading from iCloud…",
-    "iCloudBody": "This item lives in iCloud. It may take a moment, or you can skip it.",
-    "doneTitle": "Session complete",
-    "doneReviewed": "You reviewed {{count}} this session.",
-    "finish": "Finish",
-    "goToReview": "Review {{count}} for deletion",
-    "emptyTitle": "Nothing to review here",
-    "emptyBody": "You've reviewed everything in this collection."
-  },
-  "review": {
-    "title": "Review for deletion",
-    "subtitle_one": "{{count}} item marked for deletion",
-    "subtitle_other": "{{count}} items marked for deletion",
-    "empty": "Nothing is marked for deletion.",
     "keepAll": "Keep all",
-    "removeThis": "Keep this one",
-    "deleteButton_one": "Delete {{count}} item",
-    "deleteButton_other": "Delete {{count}} items",
-    "warningTitle": "Before you delete",
-    "warningDeletesLibrary": "These are removed from your Photos library, not just from this app.",
-    "warningICloud": "If iCloud Photos is on, they're removed from your other devices too.",
-    "warningRecentlyDeleted": "Photos keeps deleted items in Recently Deleted for about 30 days, where you can restore them.",
-    "confirmTitle": "Delete {{count}}?",
-    "confirmBody": "iOS will ask you to confirm. This affects your Photos library."
+    "delete_one": "Delete {{count}} item",
+    "delete_other": "Delete {{count}} items",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "done": "That’s enough for now",
+    "review": "Review your choices",
+    "another": "Another session",
+    "back": "Back",
+    "start": "Start",
+    "close": "Close",
+    "settings": "Settings"
   },
-  "result": {
-    "title": "All done",
-    "reviewed_one": "{{count}} reviewed",
-    "reviewed_other": "{{count}} reviewed",
-    "kept_one": "{{count}} kept",
-    "kept_other": "{{count}} kept",
-    "deleted_one": "{{count}} deleted",
-    "deleted_other": "{{count}} deleted",
-    "nothingDeleted": "Nothing was deleted.",
-    "someRemain_one": "{{count}} item is still waiting for deletion.",
-    "someRemain_other": "{{count}} items are still waiting for deletion.",
-    "another": "Review another",
-    "finish": "Finish for now"
+
+  "onboarding": {
+    "eyebrow": "Welcome to Memory Swipe",
+    "title": "A fresh look.\nAt your life.",
+    "body": "Revisit your photos, one at a time. Keep what matters. Make room for more.",
+    "privacy": "Your photos stay yours. No account. No uploads. Nothing deleted by a swipe."
   },
+
+  "permission": {
+    "choose": "Choose photo access",
+    "later": "Not now",
+    "denied": "Photo access is off",
+    "deniedBody": "To revisit your photos, allow access in iOS Settings. Nothing is uploaded; everything stays on your device.",
+    "settings": "Open Settings",
+    "limited": "Selected photos only",
+    "limitedBody": "You’ve shared a selection of photos. Counts reflect just that selection.",
+    "manage": "Manage selected photos"
+  },
+
+  "discover": {
+    "eyebrow": "Your camera roll, rediscovered",
+    "title": "Room for\nmore.",
+    "body": "Keep the moments. Let the rest go.",
+    "sub_one": "{{count}} memory · a moment for yourself",
+    "sub_other": "{{count}} memories · a moment for yourself",
+    "photos": "Photos",
+    "videos": "Videos",
+    "moments_one": "{{count}} moment",
+    "moments_other": "{{count}} moments",
+    "stories_one": "{{count}} story",
+    "stories_other": "{{count}} stories"
+  },
+
+  "filter": {
+    "all": "All",
+    "photos": "Photos",
+    "videos": "Videos",
+    "short": "Short videos",
+    "long": "Long videos",
+    "albums": "Albums"
+  },
+
+  "library": {
+    "eyebrow": "Your collection",
+    "title": "Find your\nway back.",
+    "body": "By month, by album, by feeling.",
+    "resume": "No pressure to finish. Your place is saved after every decision.",
+    "chapters": "{{year}} / Your chapters",
+    "albums": "Albums",
+    "memories_one": "{{count}} memory",
+    "memories_other": "{{count}} memories",
+    "unknownMonth": "Unknown date",
+    "startScope": "Start · {{scope}}"
+  },
+
+  "session": {
+    "label": "Your little reset",
+    "safety": "Nothing is deleted until you review.",
+    "progress": "{{current}} / {{total}}",
+    "complete": "Good memories.\nMore room.",
+    "revisited_one": "{{count}} moment revisited",
+    "revisited_other": "{{count}} moments revisited",
+    "pending_one": "{{count}} item waiting for your final review.",
+    "pending_other": "{{count}} items waiting for your final review.",
+    "kept": "kept",
+    "endEyebrow": "A little lighter",
+    "nothingPending": "Nothing waiting for review. Nicely done.",
+    "reviewCount_one": "Review {{count}}",
+    "reviewCount_other": "Review {{count}}"
+  },
+
+  "review": {
+    "eyebrow": "Make a little space",
+    "title": "One last look.",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "empty": "Nothing to let go.",
+    "emptyBody": "Items you set aside while swiping will wait here for one last look.",
+    "restore": "Tap an item to restore",
+    "keepBadge": "Keep",
+    "calloutTitle": "You’re in control.",
+    "warning": "Deleting removes items from Apple Photos and synced iCloud devices. Apple Photos keeps them in Recently Deleted for up to 30 days.",
+    "confirm": "Delete the selected items?",
+    "confirmBody": "iOS will ask you to confirm. Nothing is recoverable from here after Recently Deleted.",
+    "error": "Couldn’t delete these items. Your selection is saved.",
+    "partial_one": "{{count}} item is still waiting; the rest were deleted.",
+    "partial_other": "{{count}} items are still waiting; the rest were deleted.",
+    "deleted_one": "{{count}} item deleted.",
+    "deleted_other": "{{count}} items deleted."
+  },
+
+  "empty": {
+    "library": "No photos here yet",
+    "libraryBody": "When you have photos and videos on this device, they’ll show up here.",
+    "scope": "You’ve revisited this chapter",
+    "scopeBody": "Everything here has had its moment. Choose another chapter to keep going."
+  },
+
+  "loading": {
+    "photo": "Loading your memory…",
+    "error": "This memory couldn’t load",
+    "errorBody": "It may be in iCloud or no longer available. You can skip it."
+  },
+
   "settings": {
-    "title": "Settings",
+    "eyebrow": "Make it yours",
+    "title": "Small details.\nYour way.",
     "language": "Language",
-    "theme": "Appearance",
-    "haptics": "Vibration",
-    "includeFavorites": "Include Favorites",
-    "includeFavoritesHelp": "Off by default, so your favorites are protected.",
-    "shortVideoThreshold": "Short video length",
-    "shortVideoThresholdValue": "under {{count}}s",
-    "resetProgress": "Reset review progress",
-    "resetProgressHelp": "Clears your keep/delete decisions. Never deletes any photos.",
-    "resetConfirmTitle": "Reset progress?",
-    "resetConfirmBody": "This clears your review decisions only. Your photos are not touched.",
-    "about": "About",
-    "privacy": "Privacy policy",
-    "system": "System default",
+    "languageHint": "App language only",
+    "system": "System",
     "english": "English",
     "latvian": "Latviešu",
+    "theme": "Appearance",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "haptics": "Gentle haptics",
+    "hapticsHint": "A little response to each decision",
+    "favourites": "Include favourites",
+    "favouritesHint": "Protected by default",
+    "motion": "Reduce motion",
+    "motionHint": "Calm transitions, no floating prints",
+    "short": "Short video length",
+    "shortHint": "Long videos are above this limit",
+    "shortValue": "{{count}}s",
+    "access": "Photo access",
+    "accessHint": "Manage allowed photos in iOS Settings",
+    "manage": "Manage",
+    "reset": "Reset review progress",
+    "resetWarning": "This clears keep/remove decisions, including items waiting for review. It never deletes photos.",
+    "free": "Free. No ads. No account needed.",
+    "freeBody": "Your photo library stays on your device."
   }
 }

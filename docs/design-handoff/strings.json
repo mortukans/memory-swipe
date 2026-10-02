@@ -1,0 +1,258 @@
+{
+  "app.name": {
+    "en": "Memory Swipe",
+    "lv": "Memory Swipe"
+  },
+  "hero.title": {
+    "en": "Room for more.",
+    "lv": "Vieta jaunām atmiņām."
+  },
+  "hero.body": {
+    "en": "Keep the moments. Let the rest go.",
+    "lv": "Paturi svarīgo. Atbrīvo vietu jaunajam."
+  },
+  "nav.discover": {
+    "en": "Discover",
+    "lv": "Atklāt"
+  },
+  "nav.library": {
+    "en": "Library",
+    "lv": "Bibliotēka"
+  },
+  "nav.review": {
+    "en": "Review",
+    "lv": "Pārskatīt"
+  },
+  "action.random": {
+    "en": "Surprise me",
+    "lv": "Nejaušas atmiņas"
+  },
+  "action.keep": {
+    "en": "Keep",
+    "lv": "Paturēt"
+  },
+  "action.remove": {
+    "en": "Remove",
+    "lv": "Noņemt"
+  },
+  "action.skip": {
+    "en": "Skip",
+    "lv": "Izlaist"
+  },
+  "action.undo": {
+    "en": "Undo",
+    "lv": "Atsaukt"
+  },
+  "action.keepAll": {
+    "en": "Keep all",
+    "lv": "Paturēt visu"
+  },
+  "action.delete": {
+    "en": "Delete {count} items",
+    "lv": "Dzēst vienumus: {count}"
+  },
+  "action.cancel": {
+    "en": "Cancel",
+    "lv": "Atcelt"
+  },
+  "action.retry": {
+    "en": "Try again",
+    "lv": "Mēģināt vēlreiz"
+  },
+  "action.done": {
+    "en": "That’s enough for now",
+    "lv": "Šoreiz pietiks"
+  },
+  "action.review": {
+    "en": "Review your choices",
+    "lv": "Pārskatīt savas izvēles"
+  },
+  "filter.all": {
+    "en": "All",
+    "lv": "Viss"
+  },
+  "filter.photos": {
+    "en": "Photos",
+    "lv": "Bildes"
+  },
+  "filter.videos": {
+    "en": "Videos",
+    "lv": "Video"
+  },
+  "filter.short": {
+    "en": "Short videos",
+    "lv": "Īsi video"
+  },
+  "filter.long": {
+    "en": "Long videos",
+    "lv": "Gari video"
+  },
+  "filter.albums": {
+    "en": "Albums",
+    "lv": "Albumi"
+  },
+  "library.title": {
+    "en": "Find your way back.",
+    "lv": "Atgriezies savās atmiņās."
+  },
+  "library.body": {
+    "en": "By month, by album, by feeling.",
+    "lv": "Pārlūko pēc mēneša vai albuma."
+  },
+  "library.resume": {
+    "en": "No pressure to finish. Your place is saved after every decision.",
+    "lv": "Nav jāsteidzas. Pēc katras izvēles saglabājam tavu vietu."
+  },
+  "session.safety": {
+    "en": "Nothing is deleted until you review.",
+    "lv": "Nekas netiek dzēsts pirms pārskatīšanas."
+  },
+  "session.progress": {
+    "en": "{current} of {total}",
+    "lv": "{current} no {total}"
+  },
+  "session.complete": {
+    "en": "Good memories. More room.",
+    "lv": "Labas atmiņas. Vairāk vietas."
+  },
+  "session.pending": {
+    "en": "{count} items waiting for your final review.",
+    "lv": "Pārskatīšanu gaida {count} vienumi."
+  },
+  "review.title": {
+    "en": "One last look.",
+    "lv": "Vēl viens skatiens."
+  },
+  "review.empty": {
+    "en": "Nothing to let go.",
+    "lv": "Dzēšanai nekas nav atlasīts."
+  },
+  "review.restore": {
+    "en": "Tap an item to restore",
+    "lv": "Pieskaries vienumam, lai to paturētu"
+  },
+  "review.size": {
+    "en": "Estimated selected size: {size}",
+    "lv": "Atlasīto vienumu aptuvenais izmērs: {size}"
+  },
+  "review.warning": {
+    "en": "Deleting removes items from Apple Photos and synced iCloud devices. Apple Photos keeps them in Recently Deleted for up to 30 days.",
+    "lv": "Dzēšot vienumi tiks izņemti no Apple Photos un sinhronizētajām iCloud ierīcēm. Sadaļā “Nesen dzēstās” tie var palikt līdz 30 dienām."
+  },
+  "review.confirm": {
+    "en": "Delete the selected items?",
+    "lv": "Dzēst atlasītos vienumus?"
+  },
+  "review.error": {
+    "en": "Couldn’t delete these items. Your selection is saved.",
+    "lv": "Šos vienumus neizdevās dzēst. Tava atlase ir saglabāta."
+  },
+  "onboarding.title": {
+    "en": "A fresh look. At your life.",
+    "lv": "Jauns skatiens uz tavām atmiņām."
+  },
+  "onboarding.body": {
+    "en": "Revisit your photos, one at a time. Keep what matters. Make room for more.",
+    "lv": "Atklāj bildes no jauna. Paturi svarīgo un atbrīvo vietu jaunajam."
+  },
+  "onboarding.privacy": {
+    "en": "Your photos stay yours. No account. No uploads. Nothing deleted by a swipe.",
+    "lv": "Tavas bildes paliek tavā ierīcē. Bez konta un augšupielādes. Vilciens neko neizdzēš."
+  },
+  "permission.choose": {
+    "en": "Choose photo access",
+    "lv": "Izvēlies piekļuvi bildēm"
+  },
+  "permission.later": {
+    "en": "Not now",
+    "lv": "Vēlāk"
+  },
+  "permission.denied": {
+    "en": "Photo access is off",
+    "lv": "Piekļuve bildēm ir izslēgta"
+  },
+  "permission.settings": {
+    "en": "Open Settings",
+    "lv": "Atvērt iestatījumus"
+  },
+  "permission.limited": {
+    "en": "Selected photos only",
+    "lv": "Tikai atlasītās bildes"
+  },
+  "permission.manage": {
+    "en": "Manage selected photos",
+    "lv": "Pārvaldīt atlasītās bildes"
+  },
+  "empty.library": {
+    "en": "No photos here yet",
+    "lv": "Šeit vēl nav bilžu"
+  },
+  "empty.scope": {
+    "en": "You’ve revisited this chapter",
+    "lv": "Šis mēnesis jau pārskatīts"
+  },
+  "loading.photo": {
+    "en": "Loading your memory…",
+    "lv": "Ielādējam atmiņu…"
+  },
+  "loading.error": {
+    "en": "This memory couldn’t load",
+    "lv": "Šo atmiņu neizdevās ielādēt"
+  },
+  "settings.title": {
+    "en": "Small details. Your way.",
+    "lv": "Mazas detaļas. Pēc tava prāta."
+  },
+  "settings.language": {
+    "en": "Language",
+    "lv": "Valoda"
+  },
+  "settings.system": {
+    "en": "System",
+    "lv": "Sistēma"
+  },
+  "settings.theme": {
+    "en": "Appearance",
+    "lv": "Noformējums"
+  },
+  "settings.light": {
+    "en": "Light",
+    "lv": "Gaišs"
+  },
+  "settings.dark": {
+    "en": "Dark",
+    "lv": "Tumšs"
+  },
+  "settings.haptics": {
+    "en": "Gentle haptics",
+    "lv": "Vibrācija"
+  },
+  "settings.favourites": {
+    "en": "Include favourites",
+    "lv": "Iekļaut izlasi"
+  },
+  "settings.favouritesHint": {
+    "en": "Protected by default",
+    "lv": "Pēc noklusējuma izlase ir pasargāta"
+  },
+  "settings.motion": {
+    "en": "Reduce motion",
+    "lv": "Samazināt kustību"
+  },
+  "settings.short": {
+    "en": "Short video length",
+    "lv": "Īsa video garums"
+  },
+  "settings.reset": {
+    "en": "Reset review progress",
+    "lv": "Atiestatīt pārskatīšanas gaitu"
+  },
+  "settings.resetWarning": {
+    "en": "This clears keep/remove decisions. It never deletes photos.",
+    "lv": "Notīra tavas paturēt/noņemt izvēles. Bildes netiek dzēstas."
+  },
+  "settings.free": {
+    "en": "Free. No ads. No account needed.",
+    "lv": "Bez maksas. Bez reklāmām. Bez konta."
+  }
+}

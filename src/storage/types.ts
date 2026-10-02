@@ -27,8 +27,10 @@ export interface Settings {
   haptics: boolean;
   /** Include Favorites in sessions. Off by default — favorites are protected. */
   includeFavorites: boolean;
-  /** Videos strictly shorter than this many seconds count as "short". */
+  /** Videos of at most this many seconds count as "short"; longer ones are "long". */
   shortVideoMaxSec: number;
+  /** App-level Reduce Motion preference (combined with the system setting). */
+  reduceMotion: boolean;
   /** The welcome + permission flow has been completed at least once. */
   onboarded: boolean;
 }
@@ -39,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   includeFavorites: false,
   shortVideoMaxSec: 30,
+  reduceMotion: false,
   onboarded: false,
 };
 

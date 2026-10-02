@@ -1,138 +1,203 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  interpolate,
-  runOnJS,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import { MediaCard, type MediaCardLabels } from './MediaCard';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import type { MediaPreview } from '../../media/types';
-import { useTheme } from '../theme';
+import { haptic } from '../haptics';
+import { motion, useMotion, useTheme } from '../theme';
+import { FittedMedia, type FittedMediaLabels } from './FittedMedia';
+import { PrintFrame } from './Print';
 import { T } from './Text';
 
-const SWIPE_THRESHOLD = 110;
+export interface SwipeDeckHandle {
+  /** Animate the card out as if swiped, then fire the decision. Used by the labelled buttons. */
+  commit: (dir: 'keep' | 'remove') => void;
+}
 
 /**
- * Draggable media card. Swipe right = keep, left = remove. The buttons in
- * SwipeControls do the same thing, so the gesture is an enhancement, never the
- * only way. Honours the system "Reduce Motion" setting by skipping the fling.
+ * The review card as a physical print. x follows the finger; tilt is x/18
+ * clamped to ±12°; the stamp fades in as |x|/90. A commit (≥85pt, or a projected
+ * end ≥120pt with clear horizontal intent) flies the card off at 240ms and only
+ * then fires the decision — duplicates are blocked while animating. Anything
+ * less springs back. One light haptic when crossing the threshold (latched),
+ * one soft one on commit. Reduce Motion: translation without tilt, 120ms
+ * crossfades, instant snapback.
  */
-export function SwipeDeck({
-  preview,
-  loading,
-  error,
-  cardKey,
-  onKeep,
-  onRemove,
-  mediaLabels,
-  keepBadge,
-  removeBadge,
-}: {
-  preview: MediaPreview | null;
-  loading: boolean;
-  error: boolean;
-  /** Changes whenever the current item changes, so the card recenters. */
-  cardKey: string;
-  onKeep: () => void;
-  onRemove: () => void;
-  mediaLabels: MediaCardLabels;
-  keepBadge: string;
-  removeBadge: string;
-}) {
+export const SwipeDeck = forwardRef<
+  SwipeDeckHandle,
+  {
+    preview: MediaPreview | null;
+    loading: boolean;
+    error: boolean;
+    /** Changes with the current item so the card recenters and the next one arrives. */
+    cardKey: string;
+    caption?: string;
+    meta?: string;
+    onKeep: () => void;
+    onRemove: () => void;
+    mediaLabels: FittedMediaLabels;
+    keepLabel: string;
+    removeLabel: string;
+    haptics: boolean;
+  }
+>(function SwipeDeck({ preview, loading, error, cardKey, caption, meta, onKeep, onRemove, mediaLabels, keepLabel, removeLabel, haptics }, ref) {
   const t = useTheme();
-  const { width } = useWindowDimensions();
-  const reduceMotion = useReducedMotion();
+  const { reduce } = useMotion();
+
   const x = useSharedValue(0);
   const y = useSharedValue(0);
+  const rot = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const scale = useSharedValue(1);
+  const busy = useSharedValue(0);
+  const latched = useSharedValue(0);
 
+  // Latest callbacks, so the animation-completion closure never goes stale.
+  const keepRef = useRef(onKeep);
+  const removeRef = useRef(onRemove);
+  keepRef.current = onKeep;
+  removeRef.current = onRemove;
+  const hapticsRef = useRef(haptics);
+  hapticsRef.current = haptics;
+
+  const thresholdHaptic = () => haptic('light', hapticsRef.current);
+  const commitHaptic = () => haptic('select', hapticsRef.current);
+  const fireKeep = () => keepRef.current();
+  const fireRemove = () => removeRef.current();
+
+  // New card: recenter instantly; the next print arrives from 98% → 100%.
   useEffect(() => {
-    // New card: snap back to center without animation.
     x.value = 0;
     y.value = 0;
-  }, [cardKey, x, y]);
+    rot.value = 0;
+    opacity.value = 1;
+    latched.value = 0;
+    busy.value = 0;
+    if (reduce) scale.value = 1;
+    else {
+      scale.value = 0.98;
+      scale.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) });
+    }
+  }, [cardKey, reduce, x, y, rot, opacity, scale, latched, busy]);
 
-  const fling = (dir: 1 | -1, cb: () => void) => {
-    'worklet';
-    if (reduceMotion) {
-      x.value = 0;
-      runOnJS(cb)();
+  /** JS-side commit (buttons call it directly; the gesture via runOnJS). */
+  const commitTo = (dir: 1 | -1) => {
+    if (busy.value) return;
+    busy.value = 1;
+    commitHaptic();
+    const done = dir > 0 ? fireKeep : fireRemove;
+    if (reduce) {
+      opacity.value = withTiming(0, { duration: motion.reduceMs }, (finished) => {
+        if (finished) runOnJS(done)();
+      });
       return;
     }
-    x.value = withTiming(dir * width * 1.4, { duration: 220 }, (done) => {
-      if (done) runOnJS(cb)();
+    rot.value = withTiming(dir * 18, { duration: motion.commitMs, easing: Easing.out(Easing.cubic) });
+    x.value = withTiming(dir * 420, { duration: motion.commitMs, easing: Easing.out(Easing.cubic) });
+    opacity.value = withTiming(0, { duration: motion.commitMs }, (finished) => {
+      if (finished) runOnJS(done)();
     });
   };
+
+  useImperativeHandle(ref, () => ({ commit: (dir) => commitTo(dir === 'keep' ? 1 : -1) }));
 
   const enabled = !!preview && !error;
   const pan = Gesture.Pan()
     .enabled(enabled)
+    .activeOffsetX([-12, 12])
+    .failOffsetY([-18, 18])
     .onUpdate((e) => {
+      if (busy.value) return;
       x.value = e.translationX;
-      y.value = e.translationY * 0.15;
+      y.value = e.translationY * 0.1;
+      rot.value = reduce ? 0 : Math.max(-motion.maxRotationDeg, Math.min(motion.maxRotationDeg, e.translationX / 18));
+      const over = Math.abs(e.translationX) >= motion.translationThreshold;
+      if (over && !latched.value) {
+        latched.value = 1;
+        runOnJS(thresholdHaptic)();
+      } else if (!over && latched.value) {
+        latched.value = 0;
+      }
     })
-    .onEnd(() => {
-      if (x.value > SWIPE_THRESHOLD) fling(1, onKeep);
-      else if (x.value < -SWIPE_THRESHOLD) fling(-1, onRemove);
-      else {
-        x.value = withSpring(0, { damping: 18 });
-        y.value = withSpring(0, { damping: 18 });
+    .onEnd((e) => {
+      if (busy.value) return;
+      const tx = e.translationX;
+      const projected = tx + e.velocityX * 0.2;
+      const horizontal = Math.abs(tx) > Math.abs(e.translationY);
+      if (horizontal && (Math.abs(tx) >= motion.translationThreshold || Math.abs(projected) >= motion.projectedThreshold)) {
+        runOnJS(commitTo)((Math.abs(tx) >= motion.translationThreshold ? tx : projected) > 0 ? 1 : -1);
+        return;
+      }
+      latched.value = 0;
+      if (reduce) {
+        x.value = 0;
+        y.value = 0;
+        rot.value = 0;
+      } else {
+        x.value = withSpring(0, { damping: 16, stiffness: 180 });
+        y.value = withSpring(0, { damping: 16, stiffness: 180 });
+        rot.value = withSpring(0, { damping: 16, stiffness: 180 });
+      }
+    })
+    .onFinalize((_e, success) => {
+      // A cancelled touch returns the card to origin.
+      if (!success && !busy.value) {
+        latched.value = 0;
+        x.value = reduce ? 0 : withSpring(0, { damping: 16, stiffness: 180 });
+        y.value = reduce ? 0 : withSpring(0, { damping: 16, stiffness: 180 });
+        rot.value = reduce ? 0 : withSpring(0, { damping: 16, stiffness: 180 });
       }
     });
 
   const cardStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: x.value },
-      { translateY: y.value },
-      { rotate: `${interpolate(x.value, [-width, 0, width], [-8, 0, 8])}deg` },
-    ],
+    opacity: opacity.value,
+    transform: [{ translateX: x.value }, { translateY: y.value }, { rotate: `${motion.restRotationDeg + rot.value}deg` }, { scale: scale.value }],
   }));
-  const keepStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [20, SWIPE_THRESHOLD], [0, 1], 'clamp') }));
-  const removeStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [-SWIPE_THRESHOLD, -20], [1, 0], 'clamp') }));
+  const keepStamp = useAnimatedStyle(() => ({ opacity: x.value > 0 ? Math.min(x.value / 90, 1) : 0 }));
+  const removeStamp = useAnimatedStyle(() => ({ opacity: x.value < 0 ? Math.min(-x.value / 90, 1) : 0 }));
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[{ flex: 1 }, cardStyle]}>
-        <MediaCard preview={preview} loading={loading} error={error} active labels={mediaLabels} />
+      <Animated.View
+        style={[{ flex: 1 }, cardStyle]}
+        accessible
+        accessibilityLabel={[caption, meta].filter(Boolean).join(', ')}
+        accessibilityHint={`${keepLabel} / ${removeLabel}`}
+        accessibilityActions={[
+          { name: 'keep', label: keepLabel },
+          { name: 'remove', label: removeLabel },
+        ]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === 'keep') commitTo(1);
+          if (e.nativeEvent.actionName === 'remove') commitTo(-1);
+        }}
+      >
+        <PrintFrame caption={caption} meta={meta} rotation={0}>
+          <FittedMedia preview={preview} loading={loading} error={error} active labels={mediaLabels} />
+        </PrintFrame>
 
-        <Animated.View
-          pointerEvents="none"
-          style={[{ position: 'absolute', top: 24, left: 24 }, badgeBox(t.colors.keep), keepStyle]}
-        >
-          <Ionicons name="heart" size={18} color={t.colors.keep} />
-          <T variant="label" style={{ color: t.colors.keep }}>
-            {keepBadge}
-          </T>
+        {/* Stamps: ink-bordered, tilted, fade in with the drag. Decorative only. */}
+        <Animated.View pointerEvents="none" style={[stampBase(t.colors.accent, t.colors.ink), keepStamp]} accessibilityElementsHidden importantForAccessibility="no">
+          <T style={{ fontSize: 25, fontWeight: '700', color: t.colors.ink }}>{keepLabel}</T>
         </Animated.View>
-        <Animated.View
-          pointerEvents="none"
-          style={[{ position: 'absolute', top: 24, right: 24 }, badgeBox(t.colors.remove), removeStyle]}
-        >
-          <Ionicons name="trash-outline" size={18} color={t.colors.remove} />
-          <T variant="label" style={{ color: t.colors.remove }}>
-            {removeBadge}
-          </T>
+        <Animated.View pointerEvents="none" style={[stampBase(t.colors.removeTint, t.colors.ink), removeStamp]} accessibilityElementsHidden importantForAccessibility="no">
+          <T style={{ fontSize: 25, fontWeight: '700', color: t.colors.ink }}>{removeLabel}</T>
         </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
-}
+});
 
-function badgeBox(color: string) {
+function stampBase(bg: string, border: string) {
   return {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    paddingHorizontal: 12,
+    position: 'absolute' as const,
+    top: 35,
+    left: 20,
+    paddingHorizontal: 10,
     paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: color,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderWidth: 3,
+    borderColor: border,
+    borderRadius: 7,
+    backgroundColor: bg,
+    transform: [{ rotate: '-12deg' }],
   };
 }

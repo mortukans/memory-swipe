@@ -1,143 +1,168 @@
 {
-  "app": {
-    "name": "Memory Swipe",
-    "tagline": "Atklāj atmiņas no jauna. Atbrīvo vietu jaunām."
-  },
-  "common": {
-    "cancel": "Atcelt",
-    "done": "Gatavs",
-    "back": "Atpakaļ",
-    "retry": "Mēģināt vēlreiz",
-    "loading": "Ielādē…",
-    "continue": "Turpināt",
-    "keep": "Paturēt",
-    "delete": "Dzēst",
-    "settings": "Iestatījumi",
-    "close": "Aizvērt"
-  },
-  "onboarding": {
-    "slide1Title": "Atklāj savas atmiņas",
-    "slide1Body": "Pārlapo savas bildes un video un izbaudi mirkļus, ko biji aizmirsis.",
-    "slide2Title": "Paturi to, kas svarīgs",
-    "slide2Body": "Velc pa labi, lai paturētu. Velc pa kreisi, lai atliktu dzēšanai.",
-    "slide3Title": "Pārskati pirms dzēšanas",
-    "slide3Body": "Vilkšana neko neizdzēš. Vispirms visu pārskati un apstiprini.",
-    "slide4Title": "Viss paliek tavā ierīcē",
-    "slide4Body": "Tavas bildes nekad netiek augšupielādētas. Viss notiek tavā iPhone.",
-    "next": "Tālāk",
-    "getStarted": "Sākt"
-  },
-  "permission": {
-    "title": "Atļauj piekļuvi bildēm",
-    "body": "Memory Swipe nepieciešama piekļuve bibliotēkai, lai rādītu tavas bildes un video. Tās tiek tikai parādītas, un nekas netiek augšupielādēts.",
-    "allow": "Atļaut piekļuvi bildēm",
-    "deniedTitle": "Piekļuve bildēm ir izslēgta",
-    "deniedBody": "Lai lietotu Memory Swipe, ieslēdz piekļuvi bildēm iestatījumos.",
-    "openSettings": "Atvērt iestatījumus",
-    "limitedTitle": "Esi kopīgojis izvēlētās bildes",
-    "limitedBody": "Memory Swipe redz tikai tavas izvēlētās bildes. Skaiti atspoguļo tikai šo izlasi.",
-    "manageSelection": "Mainīt izvēlētās bildes",
-    "emptyTitle": "Vēl nav bilžu",
-    "emptyBody": "Kad ierīcē būs bildes un video, tie parādīsies šeit."
-  },
-  "home": {
-    "greeting": "Ko vēlies atcerēties?",
-    "reviewQueue": "Pārskatīt dzēšanai",
-    "reviewQueueCount_one": "Gaida {{count}} vienums",
-    "reviewQueueCount_other": "Gaida {{count}} vienumi",
-    "allReviewed": "Viss pārskatīts — šeit vairs nav ko skatīt.",
-    "progress": "Pārskatīti {{reviewed}} no {{total}}",
-    "nItems_one": "{{count}} vienums",
-    "nItems_other": "{{count}} vienumi",
-    "sections": {
-      "quick": "Ātrs sākums",
-      "browse": "Pārlūkot",
-      "months": "Pa mēnešiem",
-      "albums": "Albumi"
-    },
-    "collections": {
-      "random": "Nejaušas atmiņas",
-      "randomSub": "Sajaukts mikslis atklāšanai",
-      "photos": "Bildes",
-      "videos": "Video",
-      "shortVideos": "Īsi video",
-      "longVideos": "Gari video",
-      "months": "Mēneši",
-      "albums": "Albumi",
-      "unknownMonth": "Nezināms datums"
-    },
-    "startTitle": "Cik šajā reizē?",
-    "batch": "{{count}}",
-    "all": "Visi",
-    "continueBrowsing": "Turpināt"
-  },
-  "swipe": {
-    "position": "{{index}} no {{total}}",
+  "app": { "name": "Memory Swipe", "brand": "memory swipe" },
+
+  "nav": { "discover": "Atklāt", "library": "Bibliotēka", "review": "Pārskatīt" },
+
+  "action": {
+    "random": "Nejaušas atmiņas",
     "keep": "Paturēt",
     "remove": "Noņemt",
     "skip": "Izlaist",
     "undo": "Atsaukt",
-    "loadingPhoto": "Ielādē…",
-    "unavailableTitle": "Nevar parādīt šo",
-    "unavailableBody": "Šo vienumu neizdevās ielādēt. Vari to izlaist.",
-    "iCloudTitle": "Lejupielādē no iCloud…",
-    "iCloudBody": "Šis vienums glabājas iCloud. Tas var aizņemt brīdi, vai arī vari to izlaist.",
-    "doneTitle": "Sesija pabeigta",
-    "doneReviewed": "Šajā reizē pārskatīji {{count}}.",
-    "finish": "Pabeigt",
-    "goToReview": "Pārskatīt {{count}} dzēšanai",
-    "emptyTitle": "Šeit nav ko pārskatīt",
-    "emptyBody": "Esi pārskatījis visu šajā kolekcijā."
-  },
-  "review": {
-    "title": "Pārskatīt dzēšanai",
-    "subtitle_one": "{{count}} vienums atzīmēts dzēšanai",
-    "subtitle_other": "{{count}} vienumi atzīmēti dzēšanai",
-    "empty": "Nekas nav atzīmēts dzēšanai.",
     "keepAll": "Paturēt visu",
-    "removeThis": "Paturēt šo",
-    "deleteButton_one": "Dzēst {{count}} vienumu",
-    "deleteButton_other": "Dzēst {{count}} vienumus",
-    "warningTitle": "Pirms dzēšanas",
-    "warningDeletesLibrary": "Tie tiks izņemti no tavas bibliotēkas, ne tikai no šīs lietotnes.",
-    "warningICloud": "Ja iCloud bildes ir ieslēgtas, tie tiks izņemti arī no citām tavām ierīcēm.",
-    "warningRecentlyDeleted": "Bildes paliek sadaļā “Nesen dzēstās” aptuveni 30 dienas, kur tās var atjaunot.",
-    "confirmTitle": "Dzēst {{count}}?",
-    "confirmBody": "iOS lūgs apstiprinājumu. Tas ietekmē tavu bibliotēku."
+    "delete_zero": "Dzēst {{count}} vienumu",
+    "delete_one": "Dzēst {{count}} vienumu",
+    "delete_other": "Dzēst {{count}} vienumus",
+    "cancel": "Atcelt",
+    "retry": "Mēģināt vēlreiz",
+    "done": "Šoreiz pietiks",
+    "review": "Pārskatīt savas izvēles",
+    "another": "Vēl viena sesija",
+    "back": "Atpakaļ",
+    "start": "Sākt",
+    "close": "Aizvērt",
+    "settings": "Iestatījumi"
   },
-  "result": {
-    "title": "Pabeigts",
-    "reviewed_one": "Pārskatīts {{count}}",
-    "reviewed_other": "Pārskatīti {{count}}",
-    "kept_one": "Paturēts {{count}}",
-    "kept_other": "Paturēti {{count}}",
-    "deleted_one": "Dzēsts {{count}}",
-    "deleted_other": "Dzēsti {{count}}",
-    "nothingDeleted": "Nekas netika dzēsts.",
-    "someRemain_one": "Vēl {{count}} vienums gaida dzēšanu.",
-    "someRemain_other": "Vēl {{count}} vienumi gaida dzēšanu.",
-    "another": "Pārskatīt vēl",
-    "finish": "Pabeigt pagaidām"
+
+  "onboarding": {
+    "eyebrow": "Laipni lūdzam Memory Swipe",
+    "title": "Jauns skatiens\nuz tavām atmiņām.",
+    "body": "Atklāj bildes no jauna, pa vienai. Paturi svarīgo un atbrīvo vietu jaunajam.",
+    "privacy": "Tavas bildes paliek tavā ierīcē. Bez konta un augšupielādes. Vilciens neko neizdzēš."
   },
+
+  "permission": {
+    "choose": "Izvēlies piekļuvi bildēm",
+    "later": "Vēlāk",
+    "denied": "Piekļuve bildēm ir izslēgta",
+    "deniedBody": "Lai pārlūkotu bildes, atļauj piekļuvi iOS iestatījumos. Nekas netiek augšupielādēts; viss paliek tavā ierīcē.",
+    "settings": "Atvērt iestatījumus",
+    "limited": "Tikai atlasītās bildes",
+    "limitedBody": "Esi kopīgojis bilžu izlasi. Skaiti atspoguļo tikai šo izlasi.",
+    "manage": "Pārvaldīt atlasītās bildes"
+  },
+
+  "discover": {
+    "eyebrow": "Tava galerija, atklāta no jauna",
+    "title": "Vieta jaunām\natmiņām.",
+    "body": "Paturi svarīgo. Atbrīvo vietu jaunajam.",
+    "sub_zero": "{{count}} atmiņu · brīdis sev",
+    "sub_one": "{{count}} atmiņa · brīdis sev",
+    "sub_other": "{{count}} atmiņas · brīdis sev",
+    "photos": "Bildes",
+    "videos": "Video",
+    "moments_zero": "{{count}} mirkļu",
+    "moments_one": "{{count}} mirklis",
+    "moments_other": "{{count}} mirkļi",
+    "stories_zero": "{{count}} stāstu",
+    "stories_one": "{{count}} stāsts",
+    "stories_other": "{{count}} stāsti"
+  },
+
+  "filter": {
+    "all": "Viss",
+    "photos": "Bildes",
+    "videos": "Video",
+    "short": "Īsi video",
+    "long": "Gari video",
+    "albums": "Albumi"
+  },
+
+  "library": {
+    "eyebrow": "Tava kolekcija",
+    "title": "Atgriezies\nsavās atmiņās.",
+    "body": "Pārlūko pēc mēneša vai albuma.",
+    "resume": "Nav jāsteidzas. Pēc katras izvēles saglabājam tavu vietu.",
+    "chapters": "{{year}} / Tavas nodaļas",
+    "albums": "Albumi",
+    "memories_zero": "{{count}} atmiņu",
+    "memories_one": "{{count}} atmiņa",
+    "memories_other": "{{count}} atmiņas",
+    "unknownMonth": "Nezināms datums",
+    "startScope": "Sākt · {{scope}}"
+  },
+
+  "session": {
+    "label": "Tavs mazais restarts",
+    "safety": "Nekas netiek dzēsts pirms pārskatīšanas.",
+    "progress": "{{current}} / {{total}}",
+    "complete": "Labas atmiņas.\nVairāk vietas.",
+    "revisited_zero": "Pārskatīti {{count}} mirkļu",
+    "revisited_one": "Pārskatīts {{count}} mirklis",
+    "revisited_other": "Pārskatīti {{count}} mirkļi",
+    "pending_zero": "Pārskatīšanu gaida {{count}} vienumu.",
+    "pending_one": "Pārskatīšanu gaida {{count}} vienums.",
+    "pending_other": "Pārskatīšanu gaida {{count}} vienumi.",
+    "kept": "paturēti",
+    "endEyebrow": "Mazliet vieglāk",
+    "nothingPending": "Pārskatīšanu nekas negaida. Lieliski.",
+    "reviewCount_zero": "Pārskatīt {{count}}",
+    "reviewCount_one": "Pārskatīt {{count}}",
+    "reviewCount_other": "Pārskatīt {{count}}"
+  },
+
+  "review": {
+    "eyebrow": "Atbrīvo mazliet vietas",
+    "title": "Vēl viens skatiens.",
+    "selected_zero": "Atlasīti {{count}}",
+    "selected_one": "Atlasīts {{count}}",
+    "selected_other": "Atlasīti {{count}}",
+    "empty": "Dzēšanai nekas nav atlasīts.",
+    "emptyBody": "Vilkšanas laikā atliktie vienumi gaidīs šeit pēdējam skatienam.",
+    "restore": "Pieskaries vienumam, lai to paturētu",
+    "keepBadge": "Paturēt",
+    "calloutTitle": "Tu kontrolē situāciju.",
+    "warning": "Dzēšot vienumi tiks izņemti no Apple Photos un sinhronizētajām iCloud ierīcēm. Sadaļā “Nesen dzēstās” tie var palikt līdz 30 dienām.",
+    "confirm": "Dzēst atlasītos vienumus?",
+    "confirmBody": "iOS lūgs apstiprinājumu. Pēc “Nesen dzēstās” atjaunot vairs nevarēs.",
+    "error": "Šos vienumus neizdevās dzēst. Tava atlase ir saglabāta.",
+    "partial_zero": "{{count}} vienumu vēl gaida; pārējie ir dzēsti.",
+    "partial_one": "{{count}} vienums vēl gaida; pārējie ir dzēsti.",
+    "partial_other": "{{count}} vienumi vēl gaida; pārējie ir dzēsti.",
+    "deleted_zero": "Dzēsti {{count}} vienumu.",
+    "deleted_one": "Dzēsts {{count}} vienums.",
+    "deleted_other": "Dzēsti {{count}} vienumi."
+  },
+
+  "empty": {
+    "library": "Šeit vēl nav bilžu",
+    "libraryBody": "Kad ierīcē būs bildes un video, tie parādīsies šeit.",
+    "scope": "Šī nodaļa jau pārskatīta",
+    "scopeBody": "Viss šeit jau ir izskatīts. Izvēlies citu nodaļu, lai turpinātu."
+  },
+
+  "loading": {
+    "photo": "Ielādējam atmiņu…",
+    "error": "Šo atmiņu neizdevās ielādēt",
+    "errorBody": "Tā var būt iCloud vai vairs nav pieejama. Vari to izlaist."
+  },
+
   "settings": {
-    "title": "Iestatījumi",
+    "eyebrow": "Pielāgo sev",
+    "title": "Mazas detaļas.\nPēc tava prāta.",
     "language": "Valoda",
-    "theme": "Noformējums",
-    "haptics": "Vibrācija",
-    "includeFavorites": "Iekļaut izlasi",
-    "includeFavoritesHelp": "Pēc noklusējuma izslēgts, lai izlase būtu pasargāta.",
-    "shortVideoThreshold": "Īsa video garums",
-    "shortVideoThresholdValue": "līdz {{count}}s",
-    "resetProgress": "Atiestatīt pārskatīšanas gaitu",
-    "resetProgressHelp": "Notīra tavas paturēt/dzēst izvēles. Nekad nedzēš bildes.",
-    "resetConfirmTitle": "Atiestatīt gaitu?",
-    "resetConfirmBody": "Tas notīra tikai tavas izvēles. Tavas bildes netiek aiztiktas.",
-    "about": "Par lietotni",
-    "privacy": "Privātuma politika",
+    "languageHint": "Tikai lietotnes valoda",
     "system": "Sistēma",
     "english": "English",
     "latvian": "Latviešu",
+    "theme": "Noformējums",
     "light": "Gaišs",
-    "dark": "Tumšs"
+    "dark": "Tumšs",
+    "haptics": "Vibrācija",
+    "hapticsHint": "Neliela atbilde uz katru izvēli",
+    "favourites": "Iekļaut izlasi",
+    "favouritesHint": "Pēc noklusējuma izlase ir pasargāta",
+    "motion": "Samazināt kustību",
+    "motionHint": "Mierīgas pārejas, bez peldošām bildēm",
+    "short": "Īsa video garums",
+    "shortHint": "Gari video ir virs šī sliekšņa",
+    "shortValue": "{{count}}s",
+    "access": "Piekļuve bildēm",
+    "accessHint": "Pārvaldi atļautās bildes iOS iestatījumos",
+    "manage": "Pārvaldīt",
+    "reset": "Atiestatīt pārskatīšanas gaitu",
+    "resetWarning": "Notīra tavas paturēt/noņemt izvēles, arī pārskatīšanu gaidošos vienumus. Bildes netiek dzēstas.",
+    "free": "Bez maksas. Bez reklāmām. Bez konta.",
+    "freeBody": "Tava bilžu bibliotēka paliek tavā ierīcē."
   }
 }
