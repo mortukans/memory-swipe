@@ -66,8 +66,6 @@ export default function SwipeScreen() {
     loading: t('swipe.loadingPhoto'),
     unavailableTitle: t('swipe.unavailableTitle'),
     unavailableBody: t('swipe.unavailableBody'),
-    downloadingTitle: t('swipe.iCloudTitle'),
-    downloadingBody: t('swipe.iCloudBody'),
   };
 
   return (

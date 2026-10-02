@@ -37,6 +37,8 @@ export interface MediaPreview {
   durationSec: number | null;
   /** The asset is iCloud-only and the original is not on device yet. */
   needsDownload: boolean;
+  /** Temporary: what getUri() returned (videos), for on-device diagnosis. */
+  debugUri?: string;
 }
 
 /** iOS Photos authorization state, normalised across the media adapter. */

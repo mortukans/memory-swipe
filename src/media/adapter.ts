@@ -87,13 +87,21 @@ export const adapter: MediaAdapter = {
   },
 
   async resolvePreview(item): Promise<MediaPreview> {
-    const a = new Asset(item.id);
-    // Run both native calls concurrently so a card resolves in one round-trip,
-    // not two. getIsInCloud is iOS-only and may reject elsewhere.
-    const [uri, needsDownload] = await Promise.all([
-      a.getUri(),
-      a.getIsInCloud().catch(() => false),
-    ]);
+    // We do NOT call getIsInCloud: most photos are "in iCloud" under optimised
+    // storage yet display instantly from a local thumbnail, so it both slowed
+    // every card and wrongly flagged loaded photos as still downloading.
+    if (item.kind === 'video') {
+      // iOS Photos videos play from ph://<localIdentifier>, not from getUri().
+      const uri = item.id.startsWith('ph://') ? item.id : `ph://${item.id}`;
+      let debugUri: string | undefined;
+      try {
+        debugUri = await new Asset(item.id).getUri(); // temporary: for diagnosis
+      } catch {
+        debugUri = undefined;
+      }
+      return { id: item.id, kind: item.kind, uri, width: item.width, height: item.height, durationSec: item.durationSec, needsDownload: false, debugUri };
+    }
+    const uri = await new Asset(item.id).getUri();
     return {
       id: item.id,
       kind: item.kind,
@@ -101,7 +109,7 @@ export const adapter: MediaAdapter = {
       width: item.width,
       height: item.height,
       durationSec: item.durationSec,
-      needsDownload,
+      needsDownload: false,
     };
   },
 
