@@ -18,8 +18,9 @@ const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport: { width: 440, height: 956 },
   deviceScaleFactor: 3,
-  isMobile: true,
-  hasTouch: true,
+  // Mouse (not touch) emulation: Playwright's mouse drag drives the deck's pan gesture only this way.
+  isMobile: false,
+  hasTouch: false,
   locale: LANG === 'lv' ? 'lv-LV' : 'en-US',
   timezoneId: 'Europe/Riga',
   colorScheme: 'light',
@@ -84,22 +85,27 @@ await sleep(900);
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   await page.mouse.move(cx, cy);
+  await sleep(120);
   await page.mouse.down();
-  for (let i = 1; i <= 12; i++) {
-    await page.mouse.move(cx + i * 6, cy - i * 0.5);
+  await sleep(80); // RNGH needs a frame to arm the pan before the first move
+  // ~77pt: stamp ≈ 85% opaque, tilt ≈ 4°, still under the 85pt commit threshold.
+  for (let i = 1; i <= 22; i++) {
+    await page.mouse.move(cx + i * 3.5, cy - i * 0.3, { steps: 2 });
     await sleep(16);
   }
-  await sleep(250);
+  await sleep(350);
+  console.log('  drag transform:', await card.evaluate((el) => getComputedStyle(el).transform), 'box', JSON.stringify(box));
   const file = path.join(OUT, 'raw-02-swipe.png');
   await page.screenshot({ path: file, fullPage: false });
   console.log('  captured', path.basename(file));
   // Return the card gently.
-  for (let i = 12; i >= 0; i--) {
-    await page.mouse.move(cx + i * 6, cy - i * 0.5);
+  for (let i = 22; i >= 0; i -= 2) {
+    await page.mouse.move(cx + i * 3.5, cy - i * 0.3);
     await sleep(16);
   }
   await page.mouse.up();
   await sleep(500);
+  if (process.env.STOP_AFTER_SWIPE) { await browser.close(); process.exit(0); }
 }
 
 // Decide the session: a few removes so Review has content, the rest kept.
