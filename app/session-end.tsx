@@ -28,7 +28,7 @@ export default function SessionEnd() {
 
   return (
     <Screen>
-      <TopBar eyebrow={t('session.endEyebrow')} backLabel={t('action.back')} onBack={() => router.replace('/')} />
+      <TopBar eyebrow={t('session.endEyebrow')} backLabel={t('action.back')} onBack={() => router.navigate('/')} />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
         <View style={{ marginTop: 16 }}>
           <OrbitalCount count={kept} unit={t('session.kept', { count: kept })} />
@@ -44,9 +44,9 @@ export default function SessionEnd() {
         </T>
         <View style={{ flex: 1, minHeight: 24 }} />
         <View style={{ gap: 8 }}>
-          {pending > 0 ? <PrimaryButton label={t('action.review')} onPress={() => router.replace('/review')} /> : null}
+          {pending > 0 ? <PrimaryButton label={t('action.review')} onPress={() => router.navigate('/review')} /> : null}
           {remaining > 0 ? <PrimaryButton label={t('action.another')} variant={pending > 0 ? 'lime' : 'ink'} onPress={another} /> : null}
-          <PrimaryButton label={t('action.done')} variant="ghost" arrow={false} onPress={() => router.replace('/')} />
+          <PrimaryButton label={t('action.done')} variant="ghost" arrow={false} onPress={() => router.navigate('/')} />
         </View>
       </ScrollView>
     </Screen>

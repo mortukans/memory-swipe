@@ -24,6 +24,7 @@ export default function Discover() {
   const items = useLibrary((s) => s.items);
   const reviewedIds = useLibrary((s) => s.reviewedIds);
   const loading = useLibrary((s) => s.loading);
+  const loadError = useLibrary((s) => s.error);
   const refresh = useLibrary((s) => s.refresh);
   const requestAccess = useLibrary((s) => s.requestAccess);
   const presentLimitedPicker = useLibrary((s) => s.presentLimitedPicker);
@@ -50,7 +51,8 @@ export default function Discover() {
   const heroUris = heroItems.map((i) => thumbs[i.id]);
 
   const hasAccess = access === 'all' || access === 'limited';
-  const emptyLibrary = hasAccess && !loading && reviewable.length === 0;
+  const emptyLibrary = hasAccess && !loading && !loadError && reviewable.length === 0;
+  const indexFailed = hasAccess && !loading && !!loadError && reviewable.length === 0;
   const exhausted = hasAccess && reviewable.length > 0 && unreviewed.length === 0;
   const go = (kind: CollectionKind, title: string) => router.push({ pathname: '/swipe', params: { kind, key: '', title } });
 
@@ -91,11 +93,18 @@ export default function Discover() {
 
         {!hasAccess ? (
           <View style={{ gap: 12 }}>
-            <Callout title={t('permission.denied')}>{t('permission.deniedBody')}</Callout>
+            <Callout title={access === 'undetermined' ? t('permission.choose') : t('permission.denied')}>
+              {access === 'undetermined' ? t('permission.chooseBody') : t('permission.deniedBody')}
+            </Callout>
             <PrimaryButton
               label={access === 'undetermined' ? t('permission.choose') : t('permission.settings')}
               onPress={() => (access === 'undetermined' ? void requestAccess() : void Linking.openSettings())}
             />
+          </View>
+        ) : indexFailed ? (
+          <View style={{ gap: 12 }}>
+            <Callout title={t('loading.error')}>{t('loading.indexErrorBody')}</Callout>
+            <PrimaryButton label={t('action.retry')} variant="ghost" arrow={false} onPress={() => void refresh(true)} />
           </View>
         ) : emptyLibrary ? (
           <Callout title={t('empty.library')}>{t('empty.libraryBody')}</Callout>

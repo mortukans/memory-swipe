@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView, type StatusChangeEventPayload } from 'expo-video';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import type { MediaPreview } from '../../media/types';
 import { useTheme } from '../theme';
@@ -30,6 +30,7 @@ export function FittedMedia({
   active,
   labels,
   onRetry,
+  onFailedChange,
   radius = 4,
 }: {
   preview: MediaPreview | null;
@@ -38,6 +39,8 @@ export function FittedMedia({
   active: boolean;
   labels: FittedMediaLabels;
   onRetry?: () => void;
+  /** Reports whether the current media failed to load (so the deck can refuse decisions). */
+  onFailedChange?: (failed: boolean) => void;
   radius?: number;
 }) {
   const t = useTheme();
@@ -47,11 +50,13 @@ export function FittedMedia({
   const [imgLoading, setImgLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
   const [vLoading, setVLoading] = useState(true);
+  const [vError, setVError] = useState(false);
 
   useEffect(() => {
     setImgLoading(true);
     setImgError(false);
     setVLoading(true);
+    setVError(false);
   }, [preview?.id]);
 
   const player = useVideoPlayer(null, (p) => {
@@ -63,25 +68,29 @@ export function FittedMedia({
     if (!player) return;
     const sub = player.addListener('statusChange', (payload: StatusChangeEventPayload) => {
       setVLoading(payload.status === 'loading' || payload.status === 'idle');
+      setVError(payload.status === 'error');
     });
     return () => sub.remove();
   }, [player]);
 
+  // Load the source once per card; focus changes only pause/resume below.
+  const activeRef = useRef(active);
+  activeRef.current = active;
   useEffect(() => {
     if (!player || !videoSource) return;
     let cancelled = false;
     void (async () => {
       try {
         await player.replaceAsync(videoSource);
-        if (!cancelled && active) player.play();
+        if (!cancelled && activeRef.current) player.play();
       } catch {
-        /* asset unavailable / player released */
+        if (!cancelled) setVError(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [player, videoSource, active]);
+  }, [player, videoSource]);
 
   // Pause whenever inactive; only resume once the source is actually ready.
   useEffect(() => {
@@ -97,7 +106,10 @@ export function FittedMedia({
     }
   }, [player, active, isVideo]);
 
-  const failed = error || imgError;
+  const failed = error || imgError || (isVideo && vError);
+  useEffect(() => {
+    onFailedChange?.(failed);
+  }, [failed, onFailedChange]);
   const showSpinner = !failed && (loading || (preview ? (isVideo ? vLoading : imgLoading) : true));
 
   return (

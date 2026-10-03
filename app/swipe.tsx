@@ -14,15 +14,23 @@ import { SwipeDeck, type SwipeDeckHandle } from '../src/ui/components/SwipeDeck'
 import { T } from '../src/ui/components/Text';
 import { TopBar } from '../src/ui/components/TopBar';
 import { dateLabel, durationLabel } from '../src/ui/format';
-import { haptic } from '../src/ui/haptics';
 import { useTheme } from '../src/ui/theme';
+
+function announce(text: string) {
+  try {
+    AccessibilityInfo.announceForAccessibility(text);
+  } catch {
+    /* web */
+  }
+}
 
 /**
  * The session: one fitted print at a time, the ribbon recording each decision,
  * four labelled controls, and the safety line. Up to 20 items; the denominator
  * is always the real one. Completion hands off to the session-end screen.
- * The layout scrolls (large text), controls freeze during the fly-out, and a
- * stale session can never trigger completion for a new one.
+ * The layout scrolls (large text), controls freeze during the fly-out, media
+ * that failed to load cannot be decided on, and a stale session can never
+ * trigger completion (or the exhausted state) for a new one.
  */
 export default function Swipe() {
   const { t, i18n } = useTranslation();
@@ -50,9 +58,10 @@ export default function Swipe() {
   const retryPreview = useSession((s) => s.retryPreview);
   const deckRef = useRef<SwipeDeckHandle>(null);
   const [animating, setAnimating] = useState(false);
+  const [mediaFailed, setMediaFailed] = useState(false);
   const [focused, setFocused] = useState(true);
-  /** The generation this screen started; completion only counts for it. */
-  const myGen = useRef<number | null>(null);
+  /** The generation this screen started; everything below only trusts that session. */
+  const [myGen, setMyGen] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,29 +71,30 @@ export default function Swipe() {
   );
 
   useEffect(() => {
-    myGen.current = null;
-    void start(collection, filter).then(() => {
-      myGen.current = useSession.getState().generation;
-    });
+    void start(collection, filter);
+    // start() bumps the generation synchronously before its first await.
+    setMyGen(useSession.getState().generation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.kind, params.key, params.filter]);
 
-  const total = state?.order.length ?? 0;
-  const idx = state ? Math.min(state.index, total) : 0;
-  const curId = state ? currentId(state) : undefined;
-  const complete = state ? isComplete(state) : false;
-  const c = state ? counts(state) : null;
-  const marks: RibbonMark[] = state ? state.history.map((h) => h.type) : [];
+  const mine = myGen !== null && myGen === generation;
+  const total = mine && state ? state.order.length : 0;
+  const idx = mine && state ? Math.min(state.index, total) : 0;
+  const curId = mine && state ? currentId(state) : undefined;
+  const complete = mine && state ? isComplete(state) : false;
+  const c = mine && state ? counts(state) : null;
+  const marks: RibbonMark[] = mine && state ? state.history.map((h) => h.type) : [];
   const cur = curId ? items[curId] : undefined;
   const caption = cur ? dateLabel(i18n.language, cur.creationTime) : '';
   const meta = cur?.kind === 'video' ? durationLabel(cur.durationSec) : '';
   // Never show a preview that belongs to a different card than the one being decided.
   const safePreview = preview && curId && preview.id === curId ? preview : null;
 
+  useEffect(() => setMediaFailed(false), [curId]);
+
   // Done: hand the facts to the session-end screen — only for the session this screen started.
   useEffect(() => {
-    if (starting || !state || !complete || total === 0) return;
-    if (myGen.current === null || myGen.current !== generation) return;
+    if (!mine || starting || !state || !complete || total === 0) return;
     router.replace({
       pathname: '/session-end',
       params: {
@@ -99,14 +109,11 @@ export default function Swipe() {
     });
     useSession.getState().reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete, starting]);
+  }, [complete, starting, mine]);
 
-  const announceQueue = (n: number) => {
-    try {
-      AccessibilityInfo.announceForAccessibility(t('a11y.queued', { count: n }));
-    } catch {
-      /* web */
-    }
+  const onUndo = () => {
+    void undo();
+    announce(t('a11y.undone'));
   };
 
   const mediaLabels = { loading: t('loading.photo'), errorTitle: t('loading.error'), errorBody: t('loading.errorBody'), retry: t('action.retry') };
@@ -114,16 +121,19 @@ export default function Swipe() {
   const kindLabel = cur?.kind === 'video' ? t('a11y.video') : t('a11y.photo');
   const cardLabel = [kindLabel, t('a11y.indexOf', { index: Math.min(idx + 1, total), total }), caption, meta].filter(Boolean).join(', ');
   const cardMinHeight = Math.min(width * 1.15, 452);
-
-  const exhausted = !starting && total === 0;
+  const canDecide = !previewError && !mediaFailed && !starting;
+  const exhausted = mine && !starting && total === 0;
+  const queued = c?.queued ?? 0;
 
   return (
     <Screen>
       <TopBar eyebrow={title} backLabel={t('action.back')} />
 
-      {exhausted ? (
+      {!mine ? null : exhausted ? (
         <View style={{ flex: 1, justifyContent: 'center', gap: 12 }}>
-          <T variant="title">{t('empty.scope')}</T>
+          <T variant="title" accessibilityRole="header">
+            {t('empty.scope')}
+          </T>
           <T variant="body" tone="secondary">
             {t('empty.scopeBody')}
           </T>
@@ -143,7 +153,7 @@ export default function Swipe() {
             <SessionRibbon
               total={total}
               marks={marks}
-              accessibilityLabel={t('a11y.ribbon', { kept: c?.kept ?? 0, removed: c?.queued ?? 0, skipped: c?.skipped ?? 0 })}
+              accessibilityLabel={t('a11y.ribbon', { kept: c?.kept ?? 0, removed: queued, skipped: c?.skipped ?? 0 })}
             />
           </View>
 
@@ -158,24 +168,19 @@ export default function Swipe() {
               meta={meta}
               accessibilityLabel={cardLabel}
               accessibilityHint={t('a11y.cardHint')}
-              canDecide={!previewError && !starting}
+              canDecide={canDecide}
               canUndo={state ? canUndo(state) : false}
               active={focused}
-              onKeep={() => {
-                void keep();
-                announceQueue(c?.queued ?? 0);
-              }}
-              onRemove={() => {
-                void remove();
-                announceQueue((c?.queued ?? 0) + 1);
-              }}
+              onKeep={() => keep()}
+              onRemove={() => remove().then(() => announce(t('a11y.queued', { count: queued + 1 })))}
               onSkip={() => skip()}
-              onUndo={() => {
-                haptic('select', hapticsOn);
-                void undo();
+              onUndo={onUndo}
+              onRetry={() => {
+                setMediaFailed(false);
+                void retryPreview();
               }}
-              onRetry={() => void retryPreview()}
               onBusyChange={setAnimating}
+              onMediaFailed={setMediaFailed}
               mediaLabels={mediaLabels}
               labels={actionLabels}
               haptics={hapticsOn}
@@ -183,37 +188,25 @@ export default function Swipe() {
           </View>
 
           <DecisionControls
-            onUndo={() => {
-              haptic('select', hapticsOn);
-              void undo();
-              try {
-                AccessibilityInfo.announceForAccessibility(t('a11y.undone'));
-              } catch {
-                /* web */
-              }
-            }}
+            onUndo={onUndo}
             onRemove={() => deckRef.current?.commit('remove')}
-            onSkip={() => {
-              haptic('light', hapticsOn);
-              deckRef.current?.commit('skip');
-            }}
+            onSkip={() => deckRef.current?.commit('skip')}
             onKeep={() => deckRef.current?.commit('keep')}
             canUndo={state ? canUndo(state) : false}
             disabled={animating || starting}
-            decisionsDisabled={previewError}
+            decisionsDisabled={!canDecide}
             labels={actionLabels}
-            hints={{ skip: t('a11y.cardHint') }}
           />
 
           <Pressable
-            onPress={() => (c && c.queued > 0 ? router.push('/review') : undefined)}
-            disabled={!c || c.queued === 0}
-            accessibilityRole={c && c.queued > 0 ? 'button' : 'text'}
-            accessibilityLabel={c && c.queued > 0 ? `${t('session.safety')} ${t('session.reviewCount', { count: c.queued })}` : t('session.safety')}
-            style={{ alignItems: 'center', marginTop: 16, marginBottom: 6, minHeight: 24, justifyContent: 'center' }}
+            onPress={() => (queued > 0 ? router.navigate('/review') : undefined)}
+            disabled={queued === 0}
+            accessibilityRole={queued > 0 ? 'button' : 'text'}
+            accessibilityLabel={queued > 0 ? `${t('session.safety')} ${t('session.reviewCount', { count: queued })}` : t('session.safety')}
+            style={{ alignItems: 'center', marginTop: 10, minHeight: theme.targets.min, justifyContent: 'center' }}
           >
             <T variant="meta" tone="secondary" style={{ fontSize: 11, textAlign: 'center' }}>
-              {c && c.queued > 0 ? `${t('session.safety')} · ${t('session.reviewCount', { count: c.queued })}` : t('session.safety')}
+              {queued > 0 ? `${t('session.safety')} · ${t('session.reviewCount', { count: queued })}` : t('session.safety')}
             </T>
           </Pressable>
         </ScrollView>

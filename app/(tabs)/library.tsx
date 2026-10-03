@@ -29,6 +29,7 @@ export default function Library() {
   const reviewedIds = useLibrary((s) => s.reviewedIds);
   const access = useLibrary((s) => s.access);
   const refresh = useLibrary((s) => s.refresh);
+  const loadError = useLibrary((s) => s.error);
   const includeFavorites = useSettings((s) => s.settings.includeFavorites);
   const shortMax = useSettings((s) => s.settings.shortVideoMaxSec);
   const [filter, setFilter] = useState<Filter>('all');
@@ -154,12 +155,21 @@ export default function Library() {
                 })}
               </View>
             ))}
-            {months.length === 0 ? <Callout title={t('empty.library')}>{t('empty.libraryBody')}</Callout> : null}
+            {months.length === 0 ? (
+              loadError ? (
+                <View style={{ gap: 12 }}>
+                  <Callout title={t('loading.error')}>{t('loading.indexErrorBody')}</Callout>
+                  <PrimaryButton label={t('action.retry')} variant="ghost" arrow={false} onPress={() => void refresh(true)} />
+                </View>
+              ) : (
+                <Callout title={t('empty.library')}>{t('empty.libraryBody')}</Callout>
+              )
+            ) : null}
           </>
         ) : (
           <>
             {albums.map((a) => (
-              <MonthRow key={a.id} title={a.title} sub={t('filter.albums')} uri={null} fraction={0} onPress={() => goAlbum(a)} />
+              <MonthRow key={a.id} title={a.title} sub={t('library.album')} uri={null} onPress={() => goAlbum(a)} />
             ))}
             {albums.length === 0 ? <Callout title={t('empty.library')}>{t('empty.libraryBody')}</Callout> : null}
           </>

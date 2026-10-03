@@ -25,6 +25,8 @@ const context = await browser.newContext({
   colorScheme: 'light',
 });
 const page = await context.newPage();
+page.on('pageerror', (e) => console.log('  [pageerror]', e.message));
+page.on('console', (m) => { if (m.type() === 'error') console.log('  [console.error]', m.text().slice(0, 200)); });
 page.setDefaultTimeout(60_000);
 
 const btn = (name) => page.getByRole('button', { name, exact: true });
@@ -115,10 +117,10 @@ await shot('05-session-end');
 
 // 3. Review
 await btn(L.reviewChoices).click();
-await page.getByRole('button', { name: /^(Photo|Video|Bilde|Video), / }).first().waitFor();
+await page.getByRole('button', { name: /^(Keep|Paturēt), / }).first().waitFor();
 // The web mock has no video posters; restore any video tiles so the grid is all prints.
 for (let i = 0; i < 3; i++) {
-  const v = page.getByRole('button', { name: /^Video, / }).first();
+  const v = page.getByRole('button', { name: /^(Keep|Paturēt), Video, / }).first();
   if (!(await v.isVisible().catch(() => false))) break;
   await v.click();
   await sleep(400);

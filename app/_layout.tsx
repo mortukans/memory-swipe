@@ -22,9 +22,14 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void (async () => {
-      await loadSettings();
-      await checkAccess();
-      setBooted(true);
+      try {
+        await loadSettings();
+        await checkAccess();
+      } catch {
+        /* screens surface their own states */
+      } finally {
+        setBooted(true);
+      }
     })();
   }, [loadSettings, checkAccess]);
 

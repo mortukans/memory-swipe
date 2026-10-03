@@ -1,8 +1,14 @@
 {
-  "app": { "name": "Memory Swipe", "brand": "memory swipe", "tagline": "Room for more" },
-
-  "nav": { "discover": "Discover", "library": "Library", "review": "Review" },
-
+  "app": {
+    "name": "Memory Swipe",
+    "brand": "memory swipe",
+    "tagline": "Room for more"
+  },
+  "nav": {
+    "discover": "Discover",
+    "library": "Library",
+    "review": "Review"
+  },
   "action": {
     "random": "Surprise me",
     "keep": "Keep",
@@ -21,14 +27,12 @@
     "close": "Close",
     "settings": "Settings"
   },
-
   "onboarding": {
     "eyebrow": "Welcome to Memory Swipe",
     "title": "A fresh look.\nAt your life.",
     "body": "Revisit your photos, one at a time. Keep what matters. Make room for more.",
     "privacy": "Your photos stay yours. No account. No uploads. Nothing deleted by a swipe."
   },
-
   "permission": {
     "choose": "Choose photo access",
     "later": "Not now",
@@ -36,9 +40,9 @@
     "deniedBody": "To revisit your photos, allow access in iOS Settings. Nothing is uploaded; everything stays on your device.",
     "settings": "Open Settings",
     "limited": "Selected photos only",
-    "manage": "Manage selected photos"
+    "manage": "Manage selected photos",
+    "chooseBody": "Pick your whole library or just the photos you choose. Nothing is uploaded; everything stays on your device."
   },
-
   "discover": {
     "eyebrow": "Your camera roll, rediscovered",
     "title": "Room for\nmore.",
@@ -52,7 +56,6 @@
     "stories_one": "{{count}} story",
     "stories_other": "{{count}} stories"
   },
-
   "filter": {
     "all": "All",
     "photos": "Photos",
@@ -61,7 +64,6 @@
     "long": "Long videos",
     "albums": "Albums"
   },
-
   "library": {
     "eyebrow": "Your collection",
     "title": "Find your\nway back.",
@@ -73,9 +75,9 @@
     "reviewed_one": "{{count}} reviewed",
     "reviewed_other": "{{count}} reviewed",
     "unknownMonth": "Unknown date",
-    "startScope": "Start · {{scope}}"
+    "startScope": "Start · {{scope}}",
+    "album": "Album"
   },
-
   "session": {
     "label": "Your little reset",
     "safety": "Nothing is deleted until you review.",
@@ -92,7 +94,6 @@
     "reviewCount_one": "Review {{count}} item",
     "reviewCount_other": "Review {{count}} items"
   },
-
   "review": {
     "eyebrow": "Make a little space",
     "title": "One last look.",
@@ -114,7 +115,6 @@
     "unavailable_one": "{{count}} item was no longer available and was taken off the list.",
     "unavailable_other": "{{count}} items were no longer available and were taken off the list."
   },
-
   "empty": {
     "library": "No photos here yet",
     "libraryBody": "When you have photos and videos on this device, they’ll show up here.",
@@ -122,14 +122,13 @@
     "scopeBody": "Everything here has had its moment. Choose another chapter to keep going.",
     "all": "Everything has had its moment."
   },
-
   "loading": {
     "photo": "Loading your memory…",
     "queue": "Checking what’s waiting…",
     "error": "This memory couldn’t load",
-    "errorBody": "It may be in iCloud or no longer available. Try again, or skip it."
+    "errorBody": "It may be in iCloud or no longer available. Try again, or skip it.",
+    "indexErrorBody": "Your library couldn't be read. Try again in a moment."
   },
-
   "a11y": {
     "photo": "Photo",
     "video": "Video",
@@ -142,7 +141,6 @@
     "queued_other": "{{count}} items waiting for review",
     "undone": "Last decision undone"
   },
-
   "settings": {
     "eyebrow": "Make it yours",
     "title": "Small details.\nYour way.",

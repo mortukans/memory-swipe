@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { forwardRef } from 'react';
 import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { T } from './Text';
@@ -11,27 +12,20 @@ type Variant = 'ink' | 'lime' | 'danger' | 'ghost';
  * the real destructive step) · ghost (text-only secondary). Pressed = a gentle
  * scale instead of a flash.
  */
-export function PrimaryButton({
-  label,
-  onPress,
-  variant = 'ink',
-  arrow = true,
-  disabled,
-  loading,
-  fullWidth = true,
-  style,
-  accessibilityHint,
-}: {
-  label: string;
-  onPress: () => void;
-  variant?: Variant;
-  arrow?: boolean;
-  disabled?: boolean;
-  loading?: boolean;
-  fullWidth?: boolean;
-  style?: ViewStyle;
-  accessibilityHint?: string;
-}) {
+export const PrimaryButton = forwardRef<
+  View,
+  {
+    label: string;
+    onPress: () => void;
+    variant?: Variant;
+    arrow?: boolean;
+    disabled?: boolean;
+    loading?: boolean;
+    fullWidth?: boolean;
+    style?: ViewStyle;
+    accessibilityHint?: string;
+  }
+>(function PrimaryButton({ label, onPress, variant = 'ink', arrow = true, disabled, loading, fullWidth = true, style, accessibilityHint }, ref) {
   const t = useTheme();
   const bg =
     variant === 'ink' ? t.colors.text : variant === 'lime' ? t.colors.accent : variant === 'danger' ? t.colors.destructive : 'transparent';
@@ -40,6 +34,7 @@ export function PrimaryButton({
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
@@ -77,4 +72,4 @@ export function PrimaryButton({
       )}
     </Pressable>
   );
-}
+});

@@ -13,12 +13,21 @@ export const useSettings = create<SettingsState>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   ready: false,
   load: async () => {
-    await ensureStorageReady();
-    const settings = await storage.getSettings();
-    set({ settings, ready: true });
+    try {
+      await ensureStorageReady();
+      const settings = await storage.getSettings();
+      set({ settings, ready: true });
+    } catch {
+      set({ ready: true }); // defaults; never a blank app
+    }
   },
   update: async (patch) => {
-    set({ settings: { ...get().settings, ...patch } });
-    await storage.saveSettings(patch);
+    const next = { ...get().settings, ...patch };
+    set({ settings: next });
+    try {
+      await storage.saveSettings(next);
+    } catch {
+      /* in-memory state already reflects the choice */
+    }
   },
 }));

@@ -169,8 +169,12 @@ export const useSession = create<SessionState>((set, get) => ({
     });
     // A session is a batch of up to SESSION_SIZE; the denominator is always real.
     const order = eligibleOrder.slice(0, SESSION_SIZE);
+    const byId = new Map(candidates.map((i) => [i.id, i] as const));
     const itemsById: Record<string, MediaItem> = {};
-    for (const it of candidates) itemsById[it.id] = it;
+    for (const id of order) {
+      const it = byId.get(id);
+      if (it) itemsById[id] = it;
+    }
     set({ state: createReview(order), items: itemsById, eligible: eligibleOrder.length, starting: false });
     await get().loadCurrentPreview();
   },
@@ -220,11 +224,13 @@ export const useSession = create<SessionState>((set, get) => ({
     if (!st) return;
     const last = st.history[st.history.length - 1];
     if (!last) return;
-    set({ state: undoCard(st) });
+    // Persist first (same rule as decisions): the undone decision must never survive a crash.
     if (last.type !== 'skip') {
       await enqueueWrite(() => storage.deleteReviews([last.id]));
       useLibrary.getState().removeReviewed([last.id]);
     }
+    if (get().state !== st) return; // session changed under us
+    set({ state: undoCard(st) });
     await get().loadCurrentPreview();
   },
 

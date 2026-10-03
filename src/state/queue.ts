@@ -96,6 +96,10 @@ export const useQueue = create<QueueState>((set, get) => ({
     set({ deleting: true });
     let result: DeleteResult = { requested: ids.length, deleted: 0, remaining: ids.length, unavailable: 0, cancelled: false, failed: false };
     try {
+      // 0. Without Photos access every existence check fails; that must never read as "unavailable".
+      const access = await media.getAccess();
+      useLibrary.setState({ access });
+      if (access !== 'all' && access !== 'limited') throw new Error('no_access');
       // 1. Revalidate existence just before deleting.
       const live = await media.existing(ids);
       const present = ids.filter((id) => live.has(id));
@@ -127,7 +131,7 @@ export const useQueue = create<QueueState>((set, get) => ({
       result = { requested: ids.length, deleted: deleted.size, remaining: remaining.length, unavailable: unavailable.length, cancelled, failed };
       set({ ids: remaining });
       // An active swipe session may still reference these ids.
-      useSession.getState().reset();
+      if (clear.length > 0) useSession.getState().reset();
     } catch {
       result = { ...result, failed: true };
     } finally {

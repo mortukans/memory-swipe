@@ -48,7 +48,7 @@ export default function Welcome() {
         <View style={{ marginTop: 8 }}>
           <PrintStack uris={[]} height={250} />
         </View>
-        <T variant="hero" style={{ marginTop: 4 }}>
+        <T variant="hero" style={{ marginTop: 4 }} accessibilityRole="header">
           {t('onboarding.title')}
         </T>
         <T variant="body" tone="secondary" style={{ marginTop: 14 }}>

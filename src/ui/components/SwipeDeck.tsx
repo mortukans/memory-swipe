@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import type { MediaPreview } from '../../media/types';
@@ -43,12 +43,14 @@ export const SwipeDeck = forwardRef<
     canUndo: boolean;
     /** False when the screen is covered/unfocused: pauses video. */
     active: boolean;
-    onKeep: () => void;
-    onRemove: () => void;
-    onSkip: () => void;
+    onKeep: () => void | Promise<void>;
+    onRemove: () => void | Promise<void>;
+    onSkip: () => void | Promise<void>;
     onUndo: () => void;
     onRetry: () => void;
     onBusyChange?: (busy: boolean) => void;
+    /** The media for this card failed to load (Keep/Remove are refused by the screen). */
+    onMediaFailed?: (failed: boolean) => void;
     mediaLabels: FittedMediaLabels;
     labels: { keep: string; remove: string; skip: string; undo: string };
     haptics: boolean;
@@ -72,12 +74,17 @@ export const SwipeDeck = forwardRef<
 
   const thresholdHaptic = () => haptic('light', latest.current.haptics);
   const commitHaptic = () => haptic('select', latest.current.haptics);
+  // A decision that fails to persist must not leave an invisible, locked card.
   const fire = (dir: DeckCommit) => {
-    if (dir === 'keep') latest.current.onKeep();
-    else if (dir === 'remove') latest.current.onRemove();
-    else latest.current.onSkip();
+    const cb = dir === 'keep' ? latest.current.onKeep : dir === 'remove' ? latest.current.onRemove : latest.current.onSkip;
+    Promise.resolve()
+      .then(() => cb())
+      .catch(() => abort());
   };
   const setBusy = (v: boolean) => latest.current.onBusyChange?.(v);
+  const onFailedChange = useCallback((f: boolean) => latest.current.onMediaFailed?.(f), []);
+  // The remove stamp sits on a dark tint in dark mode: use the light text colour there.
+  const stampInk = t.dark ? t.colors.text : t.colors.ink;
   /** A fly-out that was cancelled (e.g. the app was interrupted mid-animation) must never leave the deck locked. */
   const abort = () => {
     busy.value = 0;
@@ -192,6 +199,7 @@ export const SwipeDeck = forwardRef<
 
   const actions = [
     ...(props.canDecide ? [{ name: 'keep', label: labels.keep }, { name: 'remove', label: labels.remove }] : []),
+    ...(error ? [{ name: 'retry', label: mediaLabels.retry }] : []),
     { name: 'skip', label: labels.skip },
     ...(props.canUndo ? [{ name: 'undo', label: labels.undo }] : []),
   ];
@@ -208,11 +216,20 @@ export const SwipeDeck = forwardRef<
         onAccessibilityAction={(e) => {
           const a = e.nativeEvent.actionName;
           if (a === 'keep' || a === 'remove' || a === 'skip') commitTo(a);
-          else if (a === 'undo') latest.current.onUndo();
+          else if (a === 'retry') latest.current.onRetry();
+          else if (a === 'undo' && !busy.value) latest.current.onUndo();
         }}
       >
         <PrintFrame caption={caption} meta={meta} rotation={0}>
-          <FittedMedia preview={preview} loading={loading} error={error} active={active} labels={mediaLabels} onRetry={props.onRetry} />
+          <FittedMedia
+            preview={preview}
+            loading={loading}
+            error={error}
+            active={active}
+            labels={mediaLabels}
+            onRetry={props.onRetry}
+            onFailedChange={onFailedChange}
+          />
         </PrintFrame>
 
         {/* Stamps: ink-bordered, tilted, fade in with the drag. Decorative only. */}
@@ -221,8 +238,8 @@ export const SwipeDeck = forwardRef<
             {labels.keep}
           </T>
         </Animated.View>
-        <Animated.View pointerEvents="none" style={[stampBase(t.colors.removeTint, t.colors.ink), removeStamp]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <T style={{ fontSize: 25, lineHeight: 30, fontWeight: '700', color: t.colors.ink }} maxFontSizeMultiplier={1.2}>
+        <Animated.View pointerEvents="none" style={[stampBase(t.colors.removeTint, stampInk), removeStamp]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <T style={{ fontSize: 25, lineHeight: 30, fontWeight: '700', color: stampInk }} maxFontSizeMultiplier={1.2}>
             {labels.remove}
           </T>
         </Animated.View>

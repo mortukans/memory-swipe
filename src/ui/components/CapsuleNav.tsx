@@ -31,7 +31,7 @@ export function CapsuleNav({
 }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const bigText = PixelRatio.getFontScale() >= 1.6;
+  const bigText = PixelRatio.getFontScale() >= 1.3;
   const labelColor = (focused: boolean) => (focused ? t.colors.ink : t.colors.navInactive);
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', left: t.spacing.page, right: t.spacing.page, bottom: Math.max(insets.bottom, 12) + 10 }}>
@@ -84,12 +84,12 @@ export function CapsuleNav({
                     borderRadius: 9,
                     paddingHorizontal: 5,
                     paddingVertical: 2,
-                    backgroundColor: focused ? t.colors.ink : t.colors.accent,
+                    backgroundColor: focused || t.dark ? t.colors.ink : t.colors.accent,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <T variant="meta" maxFontSizeMultiplier={1.6} style={{ fontSize: 10, lineHeight: 12, fontWeight: '700', color: focused ? t.colors.accent : t.colors.ink }}>
+                  <T variant="meta" maxFontSizeMultiplier={1.6} style={{ fontSize: 10, lineHeight: 12, fontWeight: '700', color: focused || t.dark ? t.colors.accent : t.colors.ink }}>
                     {badge > 99 ? '99+' : badge}
                   </T>
                 </View>

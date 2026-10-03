@@ -32,6 +32,8 @@ interface LibraryState {
 }
 
 let unwatch: (() => void) | null = null;
+/** A Photos change arrived while an index was running: re-run once it finishes. */
+let pendingRefresh = false;
 
 export const useLibrary = create<LibraryState>((set, get) => ({
   access: 'undetermined',
@@ -59,7 +61,10 @@ export const useLibrary = create<LibraryState>((set, get) => ({
 
   refresh: async (force = false) => {
     const { loading, loadedAt } = get();
-    if (loading) return;
+    if (loading) {
+      if (force) pendingRefresh = true;
+      return;
+    }
     if (!force && loadedAt && Date.now() - loadedAt < REFRESH_TTL_MS) {
       // Cheap: decisions may have changed; the index itself is fresh enough.
       try {
@@ -82,6 +87,10 @@ export const useLibrary = create<LibraryState>((set, get) => ({
       set({ items, reviewedIds, loading: false, loadedAt: Date.now() });
     } catch (e) {
       set({ loading: false, error: e instanceof Error ? e.message : 'load_failed' });
+    }
+    if (pendingRefresh) {
+      pendingRefresh = false;
+      await get().refresh(true);
     }
   },
 
