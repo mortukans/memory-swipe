@@ -72,8 +72,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     ['expo-video', { supportsBackgroundPlayback: false, supportsPictureInPicture: false }],
-    // Local "On this day" reminders only — no push, no remote notifications.
+    // Local "On this day" reminders only — no push, no remote notifications. The second
+    // plugin strips the push entitlement expo-notifications adds by default (our App Store
+    // profile has no Push capability, and we don't want one).
     'expo-notifications',
+    './tools/ci/with-local-notifications-only.js',
   ],
   experiments: { typedRoutes: true },
 });
