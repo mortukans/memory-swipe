@@ -42,7 +42,7 @@ export function DecisionControls({
         <RoundButton icon="arrow-forward" label={labels.skip} accessibilityHint={hints?.skip} onPress={onSkip} size={60} disabled={disabled} />
       </View>
       <View style={cell}>
-        <RoundButton icon="heart-outline" label={labels.keep} accessibilityHint={hints?.keep} onPress={onKeep} size={60} tone="keep" disabled={disabled || decisionsDisabled} />
+        <RoundButton icon="checkmark" label={labels.keep} accessibilityHint={hints?.keep} onPress={onKeep} size={60} tone="keep" disabled={disabled || decisionsDisabled} />
       </View>
     </View>
   );

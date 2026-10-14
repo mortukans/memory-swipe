@@ -1,9 +1,10 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Alert, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import type { CollectionKind, CollectionRef } from '../src/collections';
 import { canUndo, counts, currentId, isComplete } from '../src/review/machine';
+import { useLibrary } from '../src/state/library';
 import { useSession, type MediaFilter } from '../src/state/session';
 import { useSettings } from '../src/state/settings';
 import { DecisionControls } from '../src/ui/components/DecisionControls';
@@ -14,6 +15,7 @@ import { SwipeDeck, type SwipeDeckHandle } from '../src/ui/components/SwipeDeck'
 import { T } from '../src/ui/components/Text';
 import { TopBar } from '../src/ui/components/TopBar';
 import { dateLabel, durationLabel } from '../src/ui/format';
+import { haptic } from '../src/ui/haptics';
 import { useTheme } from '../src/ui/theme';
 
 function announce(text: string) {
@@ -39,7 +41,7 @@ export default function Swipe() {
   const params = useLocalSearchParams<{ kind: string; key: string; title: string; filter?: string }>();
   const collection: CollectionRef = { kind: (params.kind as CollectionKind) ?? 'random', key: params.key ?? '' };
   const filter = (params.filter || null) as MediaFilter | null;
-  const title = params.title || t('action.random');
+  const title = params.title || (params.kind === 'on-this-day' ? t('discover.onThisDay') : t('action.random'));
 
   const hapticsOn = useSettings((s) => s.settings.haptics);
   const start = useSession((s) => s.start);
@@ -56,6 +58,8 @@ export default function Swipe() {
   const skip = useSession((s) => s.skip);
   const undo = useSession((s) => s.undo);
   const retryPreview = useSession((s) => s.retryPreview);
+  const patchItem = useSession((s) => s.patchItem);
+  const setFavorite = useLibrary((s) => s.setFavorite);
   const deckRef = useRef<SwipeDeckHandle>(null);
   const [animating, setAnimating] = useState(false);
   const [mediaFailed, setMediaFailed] = useState(false);
@@ -111,13 +115,25 @@ export default function Swipe() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [complete, starting, mine]);
 
+  const toggleFavorite = () => {
+    if (!cur) return;
+    const next = !cur.isFavorite;
+    haptic('select', hapticsOn);
+    patchItem(cur.id, { isFavorite: next });
+    announce(t(next ? 'a11y.favorited' : 'a11y.unfavorited'));
+    setFavorite(cur.id, next).catch(() => {
+      patchItem(cur.id, { isFavorite: !next });
+      Alert.alert(t('favorite.failed'), t('favorite.failedBody'));
+    });
+  };
+
   const onUndo = () => {
     void undo();
     announce(t('a11y.undone'));
   };
 
   const mediaLabels = { loading: t('loading.photo'), errorTitle: t('loading.error'), errorBody: t('loading.errorBody'), retry: t('action.retry') };
-  const actionLabels = { keep: t('action.keep'), remove: t('action.remove'), skip: t('action.skip'), undo: t('action.undo') };
+  const actionLabels = { keep: t('action.keep'), remove: t('action.remove'), skip: t('action.skip'), undo: t('action.undo'), favorite: t('action.favorite'), unfavorite: t('action.unfavorite') };
   const kindLabel = cur?.kind === 'video' ? t('a11y.video') : t('a11y.photo');
   const cardLabel = [kindLabel, t('a11y.indexOf', { index: Math.min(idx + 1, total), total }), caption, meta].filter(Boolean).join(', ');
   const cardMinHeight = Math.min(width * 1.15, 452);
@@ -181,6 +197,8 @@ export default function Swipe() {
               }}
               onBusyChange={setAnimating}
               onMediaFailed={setMediaFailed}
+              favorite={cur ? cur.isFavorite : undefined}
+              onToggleFavorite={toggleFavorite}
               mediaLabels={mediaLabels}
               labels={actionLabels}
               haptics={hapticsOn}

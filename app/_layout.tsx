@@ -1,10 +1,13 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import i18next from 'i18next';
 import { applyLanguage, initI18n } from '../src/i18n';
+import { applyFavoriteProtection } from '../src/collections';
+import { cancelReminders, consumeLaunchUrl, installForegroundHandler, onReminderOpened, scheduleReminders } from '../src/notifications/reminders';
 import { useLibrary } from '../src/state/library';
 import { useSettings } from '../src/state/settings';
 import { useMotion, useTheme } from '../src/ui/theme';
@@ -16,6 +19,10 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
   const loadSettings = useSettings((s) => s.load);
   const settingsReady = useSettings((s) => s.ready);
   const language = useSettings((s) => s.settings.language);
+  const dailyReminder = useSettings((s) => s.settings.dailyReminder);
+  const reminderHour = useSettings((s) => s.settings.reminderHour);
+  const items = useLibrary((s) => s.items);
+  const includeFavorites = useSettings((s) => s.settings.includeFavorites);
   const checkAccess = useLibrary((s) => s.checkAccess);
   const watch = useLibrary((s) => s.watch);
   const [booted, setBooted] = useState(false);
@@ -39,6 +46,32 @@ function Bootstrap({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyLanguage(language);
   }, [language]);
+
+  // Plan the next two weeks of "On this day" reminders from the current index.
+  useEffect(() => {
+    if (!booted) return;
+    if (!dailyReminder) {
+      void cancelReminders();
+      return;
+    }
+    const texts = {
+      title: i18next.t('notification.title'),
+      body: (count: number) => i18next.t('notification.body', { count }),
+    };
+    const h = setTimeout(() => void scheduleReminders(applyFavoriteProtection(items, includeFavorites), reminderHour, texts), 1500);
+    return () => clearTimeout(h);
+  }, [booted, dailyReminder, reminderHour, items, includeFavorites, language]);
+
+  // A tapped reminder opens today's memories (cold start and while running).
+  useEffect(() => {
+    if (!booted) return;
+    void installForegroundHandler();
+    const open = (url: string) => {
+      if (url.startsWith('/swipe')) router.push({ pathname: '/swipe', params: { kind: 'on-this-day', key: '', title: '' } });
+    };
+    void consumeLaunchUrl().then((url) => url && open(url));
+    return onReminderOpened(open);
+  }, [booted]);
 
   const t = useTheme();
   if (!booted || !settingsReady) return <View style={{ flex: 1, backgroundColor: t.colors.bg }} />;

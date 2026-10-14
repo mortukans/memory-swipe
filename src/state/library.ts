@@ -26,6 +26,8 @@ interface LibraryState {
   /** Start listening for Photos library changes (idempotent). Returns unsubscribe. */
   watch: () => () => void;
 
+  /** Toggle the Photos Favorite flag; updates the index optimistically and reverts on failure. */
+  setFavorite: (id: string, isFavorite: boolean) => Promise<void>;
   addReviewed: (ids: string[]) => void;
   removeReviewed: (ids: string[]) => void;
   forget: (ids: string[]) => void;
@@ -106,6 +108,16 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     };
   },
 
+  setFavorite: async (id, isFavorite) => {
+    const patchItem = (v: boolean) => set({ items: get().items.map((i) => (i.id === id ? { ...i, isFavorite: v } : i)) });
+    patchItem(isFavorite);
+    try {
+      await media.setFavorite(id, isFavorite);
+    } catch (e) {
+      patchItem(!isFavorite);
+      throw e;
+    }
+  },
   addReviewed: (ids) => {
     const next = new Set(get().reviewedIds);
     for (const id of ids) next.add(id);

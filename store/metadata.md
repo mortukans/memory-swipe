@@ -149,3 +149,18 @@ Left for the ASC web UI (no public API):
 2. Pricing and Availability → untick "Make available on Mac" / Apple Vision Pro if shown.
 3. App Information / Agreements → EU Digital Services Act trader status (non-trader).
 4. Confirm build 7 (1.0.0) is attached to the version, then **Add for Review → Submit**.
+
+## 1.1.0 — What's New
+
+EN:
+```
+• On this day: revisit photos taken on today's date in past years, straight from Discover.
+• Optional daily reminder on days that have memories (a local notification, nothing is sent anywhere).
+• Favourite button on every card: saves the photo to Favourites in the Photos app.
+```
+LV (app only; store listing is English):
+```
+• Šajā dienā: pārskati bildes, kas uzņemtas šajā datumā iepriekšējos gados, tieši no sākuma ekrāna.
+• Izvēles ikdienas atgādinājums dienās, kad ir atmiņas (lokāls paziņojums, nekas nekur netiek sūtīts).
+• Izlases poga uz katras kartītes: saglabā bildi Photos izlasē.
+```

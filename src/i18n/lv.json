@@ -26,7 +26,9 @@
     "another": "Vēl viena sesija",
     "back": "Atpakaļ",
     "close": "Aizvērt",
-    "settings": "Iestatījumi"
+    "settings": "Iestatījumi",
+    "favorite": "Pievienot izlasei",
+    "unfavorite": "Noņemt no izlases"
   },
   "onboarding": {
     "eyebrow": "Laipni lūdzam lietotnē Memory Swipe",
@@ -58,7 +60,11 @@
     "moments_other": "{{count}} mirkļi",
     "stories_zero": "{{count}} stāstu",
     "stories_one": "{{count}} stāsts",
-    "stories_other": "{{count}} stāsti"
+    "stories_other": "{{count}} stāsti",
+    "onThisDay": "Šajā dienā",
+    "onThisDaySub_zero": "{{count}} atmiņu no šīs dienas iepriekšējos gados",
+    "onThisDaySub_one": "{{count}} atmiņa no šīs dienas iepriekšējos gados",
+    "onThisDaySub_other": "{{count}} atmiņas no šīs dienas iepriekšējos gados"
   },
   "filter": {
     "all": "Viss",
@@ -154,7 +160,9 @@
     "queued_zero": "Pārskatīšanu gaida {{count}} vienumu",
     "queued_one": "Pārskatīšanu gaida {{count}} vienums",
     "queued_other": "Pārskatīšanu gaida {{count}} vienumi",
-    "undone": "Pēdējā izvēle atsaukta"
+    "undone": "Pēdējā izvēle atsaukta",
+    "favorited": "Pievienots izlasei lietotnē Photos",
+    "unfavorited": "Noņemts no izlases"
   },
   "settings": {
     "eyebrow": "Pielāgo sev",
@@ -184,6 +192,29 @@
     "reset": "Atiestatīt pārskatīšanas gaitu",
     "resetWarning": "Notīra tavas paturēt/noņemt izvēles, arī pārskatīšanu gaidošos vienumus. Bildes netiek dzēstas.",
     "free": "Bez maksas. Bez reklāmām. Bez konta.",
-    "freeBody": "Tava bilžu bibliotēka paliek tavā ierīcē."
+    "freeBody": "Tava bilžu bibliotēka paliek tavā ierīcē.",
+    "reminder": "Ikdienas atmiņu atgādinājums",
+    "reminderHint": "Tikai dienās, kad no šī datuma iepriekšējos gados ir bildes",
+    "reminderTime": "Atgādinājuma laiks",
+    "morning": "Rīts · 8:00",
+    "noon": "Pusdienlaiks · 12:00",
+    "evening": "Vakars · 19:00"
+  },
+  "reminder": {
+    "nudgeTitle": "Viena atmiņa dienā",
+    "nudgeBody": "Saņem vienu klusu atgādinājumu dienās, kad no šī datuma iepriekšējos gados ir bildes. Nekas nekur netiek sūtīts; atgādinājums tiek ieplānots tavā telefonā.",
+    "enable": "Ieslēgt ikdienas atgādinājumu",
+    "deniedTitle": "Paziņojumi ir izslēgti",
+    "deniedBody": "Atļauj Memory Swipe paziņojumus iOS iestatījumos, lai saņemtu ikdienas atgādinājumu."
+  },
+  "notification": {
+    "title": "Šajā dienā",
+    "body_zero": "{{count}} atmiņu no šīs dienas iepriekšējos gados gaida tavu skatienu.",
+    "body_one": "{{count}} atmiņa no šīs dienas iepriekšējos gados gaida tavu skatienu.",
+    "body_other": "{{count}} atmiņas no šīs dienas iepriekšējos gados gaida tavu skatienu."
+  },
+  "favorite": {
+    "failed": "Neizdevās atjaunināt izlasi",
+    "failedBody": "Photos nepieņēma izmaiņu. Mēģini vēlreiz pēc brīža."
   }
 }

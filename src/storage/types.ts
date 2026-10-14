@@ -33,6 +33,10 @@ export interface Settings {
   reduceMotion: boolean;
   /** The welcome + permission flow has been completed at least once. */
   onboarded: boolean;
+  /** Daily local "On this day" reminder (only on days that have memories). */
+  dailyReminder: boolean;
+  /** Hour of day (0-23, local) for the reminder. */
+  reminderHour: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -43,6 +47,8 @@ export const DEFAULT_SETTINGS: Settings = {
   shortVideoMaxSec: 30,
   reduceMotion: false,
   onboarded: false,
+  dailyReminder: false,
+  reminderHour: 9,
 };
 
 export interface SessionRow {

@@ -52,6 +52,9 @@ export interface MediaAdapter {
   /** Of these ids, which still exist in the library (for pre-deletion revalidation). */
   existing(ids: string[]): Promise<Set<string>>;
 
+  /** Mark / unmark an asset as a Favorite in the system Photos library. */
+  setFavorite(id: string, isFavorite: boolean): Promise<void>;
+
   /** Subscribe to library changes (iOS permission/selection changes, external edits). */
   subscribe(onChange: () => void): () => void;
 }

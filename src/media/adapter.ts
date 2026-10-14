@@ -111,6 +111,10 @@ export const adapter: MediaAdapter = {
     await Asset.delete(ids.map((id) => new Asset(id)));
   },
 
+  async setFavorite(id, isFavorite) {
+    await new Asset(id).setFavorite(isFavorite);
+  },
+
   async existing(ids) {
     const out = new Set<string>();
     await Promise.all(

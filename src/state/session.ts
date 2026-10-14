@@ -4,6 +4,7 @@ import {
   collectionId as collectionIdOf,
   hashSeed,
   longVideos,
+  onThisDay,
   onlyKind,
   shortVideos,
   type CollectionRef,
@@ -51,6 +52,8 @@ interface SessionState {
   remove: () => Promise<void>;
   skip: () => void;
   undo: () => Promise<void>;
+  /** Mirror a favourite change into this session's item snapshot. */
+  patchItem: (id: string, patch: Partial<MediaItem>) => void;
   reset: () => void;
 }
 
@@ -126,6 +129,9 @@ async function candidatesFor(c: CollectionRef, filter: MediaFilter | null | unde
       break;
     case 'month':
       base = items.filter((i) => monthMatches(i, c.key));
+      break;
+    case 'on-this-day':
+      base = onThisDay(items);
       break;
     case 'random':
     default:
@@ -232,6 +238,11 @@ export const useSession = create<SessionState>((set, get) => ({
     if (get().state !== st) return; // session changed under us
     set({ state: undoCard(st) });
     await get().loadCurrentPreview();
+  },
+
+  patchItem: (id, patch) => {
+    const it = get().items[id];
+    if (it) set({ items: { ...get().items, [id]: { ...it, ...patch } } });
   },
 
   reset: () => {

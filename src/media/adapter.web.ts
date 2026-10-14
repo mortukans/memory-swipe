@@ -27,6 +27,20 @@ function buildSamples(): MediaItem[] {
       isFavorite: i % 11 === 0,
     });
   }
+  // Same calendar day in past years, so "On this day" has something to show in the demo.
+  const today = new Date();
+  for (const yearsAgo of [1, 2, 4]) {
+    items.push({
+      id: `mock-otd-${yearsAgo}`,
+      kind: 'photo',
+      creationTime: new Date(today.getFullYear() - yearsAgo, today.getMonth(), today.getDate(), 15).getTime(),
+      modificationTime: now,
+      durationSec: null,
+      width: 1200,
+      height: 1600,
+      isFavorite: false,
+    });
+  }
   return items;
 }
 
@@ -80,6 +94,9 @@ export const adapter: MediaAdapter = {
   async deleteAssets(ids) {
     const gone = new Set(ids);
     SAMPLES = SAMPLES.filter((i) => !gone.has(i.id));
+  },
+  async setFavorite(id, isFavorite) {
+    SAMPLES = SAMPLES.map((i) => (i.id === id ? { ...i, isFavorite } : i));
   },
   async existing(ids) {
     const live = new Set(SAMPLES.map((i) => i.id));

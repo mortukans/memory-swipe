@@ -15,6 +15,7 @@ import { T } from '../src/ui/components/Text';
 import { Toggle } from '../src/ui/components/Toggle';
 import { TopBar } from '../src/ui/components/TopBar';
 import { useTheme } from '../src/ui/theme';
+import { requestReminderPermission } from '../src/notifications/reminders';
 
 export const PRIVACY_URL = 'https://mortukans.github.io/memory-swipe/privacy/';
 export const SUPPORT_URL = 'https://mortukans.github.io/memory-swipe/support/';
@@ -111,6 +112,41 @@ export default function SettingsScreen() {
             hint={t('settings.motionHint')}
             right={<Toggle value={settings.reduceMotion} onChange={(reduceMotion) => void update({ reduceMotion })} label={t('settings.motion')} />}
           />
+          <SettingsRow
+            title={t('settings.reminder')}
+            hint={t('settings.reminderHint')}
+            right={
+              <Toggle
+                value={settings.dailyReminder}
+                label={t('settings.reminder')}
+                onChange={(on) => {
+                  if (!on) {
+                    void update({ dailyReminder: false });
+                    return;
+                  }
+                  void requestReminderPermission().then((ok) => {
+                    if (ok) void update({ dailyReminder: true });
+                    else Alert.alert(t('reminder.deniedTitle'), t('reminder.deniedBody'), [{ text: t('action.cancel'), style: 'cancel' }, { text: t('permission.settings'), onPress: () => void Linking.openSettings() }]);
+                  });
+                }}
+              />
+            }
+          />
+          {settings.dailyReminder ? (
+            <SettingsRow
+              title={t('settings.reminderTime')}
+              layout="stacked"
+              right={chips<number>(
+                settings.reminderHour,
+                [
+                  { value: 8, label: t('settings.morning') },
+                  { value: 12, label: t('settings.noon') },
+                  { value: 19, label: t('settings.evening') },
+                ],
+                (reminderHour) => void update({ reminderHour }),
+              )}
+            />
+          ) : null}
           <SettingsRow
             title={t('settings.short')}
             hint={t('settings.shortHint')}

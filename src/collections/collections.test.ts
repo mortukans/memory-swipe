@@ -7,6 +7,7 @@ import {
   hashSeed,
   longVideos,
   monthKeyOf,
+  onThisDay,
   onlyKind,
   seededShuffle,
   shortVideos,
@@ -111,5 +112,27 @@ describe('progress', () => {
     expect(computeProgress(10, 3)).toEqual({ total: 10, reviewed: 3, remaining: 7, fraction: 0.3 });
     expect(computeProgress(0, 0).fraction).toBe(0);
     expect(computeProgress(5, 99)).toMatchObject({ reviewed: 5, remaining: 0 });
+  });
+});
+
+describe('onThisDay', () => {
+  const mk = (id: string, y: number, m: number, d: number): MediaItem => ({
+    id,
+    kind: 'photo',
+    creationTime: new Date(y, m - 1, d, 12).getTime(),
+    modificationTime: null,
+    durationSec: null,
+    width: 1,
+    height: 1,
+    isFavorite: false,
+  });
+  it('matches the same month and day in earlier years only', () => {
+    const today = new Date(2026, 9, 14);
+    const items = [mk('a', 2024, 10, 14), mk('b', 2019, 10, 14), mk('c', 2026, 10, 14), mk('d', 2024, 10, 13), mk('e', 2024, 11, 14)];
+    expect(onThisDay(items, today).map((i) => i.id)).toEqual(['a', 'b']);
+  });
+  it('ignores items without a date', () => {
+    const today = new Date(2026, 9, 14);
+    expect(onThisDay([{ ...mk('x', 2020, 10, 14), creationTime: null }], today)).toEqual([]);
   });
 });

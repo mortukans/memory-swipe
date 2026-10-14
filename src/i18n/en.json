@@ -25,7 +25,9 @@
     "another": "Another session",
     "back": "Back",
     "close": "Close",
-    "settings": "Settings"
+    "settings": "Settings",
+    "favorite": "Add to Favourites",
+    "unfavorite": "Remove from Favourites"
   },
   "onboarding": {
     "eyebrow": "Welcome to Memory Swipe",
@@ -54,7 +56,10 @@
     "moments_one": "{{count}} moment",
     "moments_other": "{{count}} moments",
     "stories_one": "{{count}} story",
-    "stories_other": "{{count}} stories"
+    "stories_other": "{{count}} stories",
+    "onThisDay": "On this day",
+    "onThisDaySub_one": "{{count}} memory from this day in past years",
+    "onThisDaySub_other": "{{count}} memories from this day in past years"
   },
   "filter": {
     "all": "All",
@@ -139,7 +144,9 @@
     "restoreHint": "Restores this item and takes it off the delete list",
     "queued_one": "{{count}} item waiting for review",
     "queued_other": "{{count}} items waiting for review",
-    "undone": "Last decision undone"
+    "undone": "Last decision undone",
+    "favorited": "Added to Favourites in Photos",
+    "unfavorited": "Removed from Favourites"
   },
   "settings": {
     "eyebrow": "Make it yours",
@@ -169,6 +176,28 @@
     "reset": "Reset review progress",
     "resetWarning": "This clears keep/remove decisions, including items waiting for review. It never deletes photos.",
     "free": "Free. No ads. No account needed.",
-    "freeBody": "Your photo library stays on your device."
+    "freeBody": "Your photo library stays on your device.",
+    "reminder": "Daily memory reminder",
+    "reminderHint": "Only on days with photos from this date in past years",
+    "reminderTime": "Reminder time",
+    "morning": "Morning · 8:00",
+    "noon": "Noon · 12:00",
+    "evening": "Evening · 19:00"
+  },
+  "reminder": {
+    "nudgeTitle": "A memory a day",
+    "nudgeBody": "Get one quiet reminder on days that have photos from this date in past years. Nothing is sent anywhere; the reminder is scheduled on your phone.",
+    "enable": "Turn on daily reminder",
+    "deniedTitle": "Notifications are off",
+    "deniedBody": "Allow notifications for Memory Swipe in iOS Settings to get the daily reminder."
+  },
+  "notification": {
+    "title": "On this day",
+    "body_one": "{{count}} memory from this day in past years is waiting for a look.",
+    "body_other": "{{count}} memories from this day in past years are waiting for a look."
+  },
+  "favorite": {
+    "failed": "Couldn't update Favourites",
+    "failedBody": "Photos did not accept the change. Try again in a moment."
   }
 }

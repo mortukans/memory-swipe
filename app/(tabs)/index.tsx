@@ -3,7 +3,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
-import { SESSION_SIZE, applyFavoriteProtection, onlyKind, type CollectionKind } from '../../src/collections';
+import { SESSION_SIZE, applyFavoriteProtection, onThisDay, onlyKind, type CollectionKind } from '../../src/collections';
+import { requestReminderPermission } from '../../src/notifications/reminders';
 import { useLibrary } from '../../src/state/library';
 import { useQueue } from '../../src/state/queue';
 import { useSettings } from '../../src/state/settings';
@@ -29,6 +30,8 @@ export default function Discover() {
   const requestAccess = useLibrary((s) => s.requestAccess);
   const presentLimitedPicker = useLibrary((s) => s.presentLimitedPicker);
   const includeFavorites = useSettings((s) => s.settings.includeFavorites);
+  const dailyReminder = useSettings((s) => s.settings.dailyReminder);
+  const updateSettings = useSettings((s) => s.update);
   const loadQueue = useQueue((s) => s.load);
   const [focused, setFocused] = useState(true);
 
@@ -46,6 +49,7 @@ export default function Discover() {
   const photoCount = useMemo(() => onlyKind(reviewable, 'photo').length, [reviewable]);
   const videoCount = useMemo(() => onlyKind(reviewable, 'video').length, [reviewable]);
   const sessionCount = Math.min(SESSION_SIZE, unreviewed.length);
+  const todayCount = useMemo(() => onThisDay(reviewable).length, [reviewable]);
   const heroItems = useMemo(() => onlyKind(unreviewed, 'photo').slice(0, 3), [unreviewed]);
   const thumbs = useThumbs(heroItems, 3);
   const heroUris = heroItems.map((i) => thumbs[i.id]);
@@ -114,10 +118,31 @@ export default function Discover() {
             <T variant="meta" tone="secondary" style={{ textAlign: 'center', marginTop: 10, marginBottom: 22, fontSize: 11 }}>
               {exhausted ? t('empty.all') : t('discover.sub', { count: sessionCount })}
             </T>
+            {todayCount > 0 ? (
+              <View style={{ marginBottom: 10 }}>
+                <Tile title={t('discover.onThisDay')} sub={t('discover.onThisDaySub', { count: todayCount })} onPress={() => go('on-this-day', t('discover.onThisDay'))} />
+              </View>
+            ) : null}
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Tile title={t('discover.photos')} sub={t('discover.moments', { count: photoCount })} onPress={() => go('photos', t('discover.photos'))} />
               <Tile title={t('discover.videos')} sub={t('discover.stories', { count: videoCount })} onPress={() => go('videos', t('discover.videos'))} />
             </View>
+            {!dailyReminder ? (
+              <View style={{ marginTop: 16, gap: 8 }}>
+                <Callout title={t('reminder.nudgeTitle')}>{t('reminder.nudgeBody')}</Callout>
+                <PrimaryButton
+                  label={t('reminder.enable')}
+                  variant="ghost"
+                  arrow={false}
+                  onPress={() => {
+                    void requestReminderPermission().then((ok) => {
+                      if (ok) void updateSettings({ dailyReminder: true });
+                      else void Linking.openSettings();
+                    });
+                  }}
+                />
+              </View>
+            ) : null}
             {access === 'limited' ? (
               <Pressable onPress={() => void presentLimitedPicker()} accessibilityRole="button" style={{ marginTop: 16, minHeight: 44, justifyContent: 'center' }}>
                 <T variant="meta" tone="secondary" style={{ textAlign: 'center' }}>

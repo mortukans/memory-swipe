@@ -1,4 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import type { MediaPreview } from '../../media/types';
@@ -52,8 +54,11 @@ export const SwipeDeck = forwardRef<
     /** The media for this card failed to load (Keep/Remove are refused by the screen). */
     onMediaFailed?: (failed: boolean) => void;
     mediaLabels: FittedMediaLabels;
-    labels: { keep: string; remove: string; skip: string; undo: string };
+    labels: { keep: string; remove: string; skip: string; undo: string; favorite: string; unfavorite: string };
     haptics: boolean;
+    /** Photos Favorite state of the current item; undefined hides the control. */
+    favorite?: boolean;
+    onToggleFavorite?: () => void;
   }
 >(function SwipeDeck(props, ref) {
   const { preview, loading, error, cardKey, caption, meta, active, mediaLabels, labels, haptics } = props;
@@ -202,7 +207,9 @@ export const SwipeDeck = forwardRef<
     ...(error ? [{ name: 'retry', label: mediaLabels.retry }] : []),
     { name: 'skip', label: labels.skip },
     ...(props.canUndo ? [{ name: 'undo', label: labels.undo }] : []),
+    ...(props.favorite !== undefined && props.onToggleFavorite ? [{ name: 'favorite', label: props.favorite ? labels.unfavorite : labels.favorite }] : []),
   ];
+  const showFavorite = props.favorite !== undefined && !!props.onToggleFavorite && !!preview && !error;
 
   return (
     <GestureDetector gesture={pan}>
@@ -218,6 +225,7 @@ export const SwipeDeck = forwardRef<
           if (a === 'keep' || a === 'remove' || a === 'skip') commitTo(a);
           else if (a === 'retry') latest.current.onRetry();
           else if (a === 'undo' && !busy.value) latest.current.onUndo();
+          else if (a === 'favorite') latest.current.onToggleFavorite?.();
         }}
       >
         <PrintFrame caption={caption} meta={meta} rotation={0}>
@@ -231,6 +239,36 @@ export const SwipeDeck = forwardRef<
             onFailedChange={onFailedChange}
           />
         </PrintFrame>
+
+        {/* Favourite: a small sticker on the print's corner. Writes to Photos Favorites. */}
+        {showFavorite ? (
+          <View style={{ position: 'absolute', top: 18, right: 18 }}>
+            <Pressable
+              onPress={() => latest.current.onToggleFavorite?.()}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={props.favorite ? labels.unfavorite : labels.favorite}
+              accessibilityState={{ selected: !!props.favorite }}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: props.favorite ? t.colors.ink : t.colors.surface,
+                borderWidth: 1,
+                borderColor: props.favorite ? t.colors.ink : t.colors.line,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+                shadowColor: '#30412C',
+                shadowOpacity: 0.12,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 3 },
+              })}
+            >
+              <Ionicons name={props.favorite ? 'heart' : 'heart-outline'} size={22} color={props.favorite ? t.colors.accent : t.colors.ink} />
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Stamps: ink-bordered, tilted, fade in with the drag. Decorative only. */}
         <Animated.View pointerEvents="none" style={[stampBase(t.colors.accent, t.colors.ink), keepStamp]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

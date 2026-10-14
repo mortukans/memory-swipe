@@ -21,7 +21,9 @@ export type CollectionKind =
   | 'photos'
   | 'videos'
   | 'short-videos'
-  | 'long-videos';
+  | 'long-videos'
+  /** Same calendar day (month + day) in any PAST year. */
+  | 'on-this-day';
 
 /** Stable identifier for a collection, e.g. "month:2026-09" or "album:ABC123". */
 export interface CollectionRef {
@@ -31,6 +33,25 @@ export interface CollectionRef {
 }
 
 export const collectionId = (c: CollectionRef): string => (c.key ? `${c.kind}:${c.key}` : c.kind);
+
+// ─── on this day ─────────────────────────────────────────────────────────────
+
+/**
+ * Items captured on the same month + day as `date` (local time) in an earlier
+ * year. Today's own photos are not "memories" yet, so the current year is excluded.
+ */
+export function onThisDay(items: readonly MediaItem[], date: Date = new Date()): MediaItem[] {
+  const m = date.getMonth();
+  const d = date.getDate();
+  const y = date.getFullYear();
+  const out: MediaItem[] = [];
+  for (const it of items) {
+    if (it.creationTime == null) continue;
+    const c = new Date(it.creationTime);
+    if (c.getFullYear() < y && c.getMonth() === m && c.getDate() === d) out.push(it);
+  }
+  return out;
+}
 
 // ─── month grouping ──────────────────────────────────────────────────────────
 

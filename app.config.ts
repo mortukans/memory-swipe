@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: APP_NAME,
   slug: 'memory-swipe',
   scheme: 'memoryswipe',
-  version: '1.0.0',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -72,6 +72,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     ['expo-video', { supportsBackgroundPlayback: false, supportsPictureInPicture: false }],
+    // Local "On this day" reminders only — no push, no remote notifications.
+    'expo-notifications',
   ],
   experiments: { typedRoutes: true },
 });
