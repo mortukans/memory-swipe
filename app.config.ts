@@ -75,8 +75,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Local "On this day" reminders only — no push, no remote notifications. The second
     // plugin strips the push entitlement expo-notifications adds by default (our App Store
     // profile has no Push capability, and we don't want one).
-    'expo-notifications',
+    // (Config mods run in reverse registration order, so ours must be registered first to run last.)
     './tools/ci/with-local-notifications-only.js',
+    'expo-notifications',
   ],
   experiments: { typedRoutes: true },
 });
