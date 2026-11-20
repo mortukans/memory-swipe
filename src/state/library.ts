@@ -25,6 +25,8 @@ interface LibraryState {
   refresh: (force?: boolean) => Promise<void>;
   /** Start listening for Photos library changes (idempotent). Returns unsubscribe. */
   watch: () => () => void;
+  /** Resolve once the library index has been loaded at least once (loads it if needed). */
+  ensureLoaded: () => Promise<void>;
 
   /** Toggle the Photos Favorite flag; updates the index optimistically and reverts on failure. */
   setFavorite: (id: string, isFavorite: boolean) => Promise<void>;
@@ -93,6 +95,22 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     if (pendingRefresh) {
       pendingRefresh = false;
       await get().refresh(true);
+    }
+  },
+
+  ensureLoaded: async () => {
+    if (get().loadedAt) return;
+    if (!get().loading) await get().refresh(true);
+    // A load started elsewhere (e.g. Discover) may still be running: wait for it.
+    if (get().loading) {
+      await new Promise<void>((resolve) => {
+        const unsub = useLibrary.subscribe((s) => {
+          if (!s.loading) {
+            unsub();
+            resolve();
+          }
+        });
+      });
     }
   },
 

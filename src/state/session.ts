@@ -140,6 +140,16 @@ async function candidatesFor(c: CollectionRef, filter: MediaFilter | null | unde
   return applyFilter(base, filter, shortMax);
 }
 
+/** Ids the user has set aside for deletion (still waiting in Review). */
+async function queuedForRemoval(): Promise<Set<string>> {
+  try {
+    const rows = await storage.getReviews();
+    return new Set(rows.filter((r) => r.decision === 'remove').map((r) => r.id));
+  } catch {
+    return new Set();
+  }
+}
+
 function monthMatches(item: MediaItem, key: string): boolean {
   if (item.creationTime == null) return key === 'unknown';
   const d = new Date(item.creationTime);
@@ -163,8 +173,15 @@ export const useSession = create<SessionState>((set, get) => ({
     ++previewSeq; // any in-flight preview from a previous session is now stale
     previewCache.clear();
     set({ starting: true, generation: gen, collection, filter, state: null, items: {}, eligible: 0, preview: null, previewError: false, previewLoading: false });
+    // Opening from a notification can happen before anything indexed the library:
+    // without this, the session saw an empty library and claimed "nothing left".
+    await useLibrary.getState().ensureLoaded();
+    if (gen !== startSeq) return;
     const { settings } = useSettings.getState();
-    const { reviewedIds } = useLibrary.getState();
+    const onThisDayScope = collection.kind === 'on-this-day';
+    // "On this day" is a memory lane, not a cleanup batch: every memory from this date is
+    // shown again, even ones kept before. Only items already waiting for deletion are left out.
+    const reviewedIds = onThisDayScope ? await queuedForRemoval() : useLibrary.getState().reviewedIds;
     const candidates = await candidatesFor(collection, filter);
     if (gen !== startSeq) return; // a newer session started meanwhile
     const eligibleOrder = buildSessionOrder(candidates, {
@@ -174,7 +191,8 @@ export const useSession = create<SessionState>((set, get) => ({
       seed: hashSeed(collectionIdOf(collection) + (filter ?? '')),
     });
     // A session is a batch of up to SESSION_SIZE; the denominator is always real.
-    const order = eligibleOrder.slice(0, SESSION_SIZE);
+    // "On this day" is never cut: it shows every memory from the date.
+    const order = onThisDayScope ? eligibleOrder : eligibleOrder.slice(0, SESSION_SIZE);
     const byId = new Map(candidates.map((i) => [i.id, i] as const));
     const itemsById: Record<string, MediaItem> = {};
     for (const id of order) {
